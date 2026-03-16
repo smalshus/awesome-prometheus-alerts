@@ -5,9 +5,10 @@ groups:
   
   rules:
 
+    # 1m delay allows a restart without triggering an alert.
     - alert: MysqlDown
       expr: 'mysql_up == 0'
-      for: 0m
+      for: 1m
       labels:
         severity: critical
       annotations:
@@ -41,18 +42,20 @@ groups:
         summary: MySQL high threads running (instance {{ $labels.instance }})
         description: "More than 60% of MySQL connections are in running state on {{ $labels.instance }}\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
+    # 1m delay allows a restart without triggering an alert.
     - alert: MysqlSlaveIoThreadNotRunning
       expr: '( mysql_slave_status_slave_io_running and ON (instance) mysql_slave_status_master_server_id > 0 ) == 0'
-      for: 0m
+      for: 1m
       labels:
         severity: critical
       annotations:
         summary: MySQL Slave IO thread not running (instance {{ $labels.instance }})
         description: "MySQL Slave IO thread not running on {{ $labels.instance }}\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
+    # 1m delay allows a restart without triggering an alert.
     - alert: MysqlSlaveSqlThreadNotRunning
       expr: '( mysql_slave_status_slave_sql_running and ON (instance) mysql_slave_status_master_server_id > 0) == 0'
-      for: 0m
+      for: 1m
       labels:
         severity: critical
       annotations:

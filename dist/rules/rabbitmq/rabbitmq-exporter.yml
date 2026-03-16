@@ -5,18 +5,20 @@ groups:
   
   rules:
 
+    # 1m delay allows a restart without triggering an alert.
     - alert: RabbitmqNodeDown
       expr: 'sum(rabbitmq_build_info) < 3'
-      for: 0m
+      for: 1m
       labels:
         severity: critical
       annotations:
         summary: RabbitMQ node down (instance {{ $labels.instance }})
         description: "Less than 3 nodes running in RabbitMQ cluster\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
+    # 1m delay allows a restart without triggering an alert.
     - alert: RabbitmqNodeNotDistributed
       expr: 'erlang_vm_dist_node_state < 3'
-      for: 0m
+      for: 1m
       labels:
         severity: critical
       annotations:
@@ -33,7 +35,7 @@ groups:
         description: "Running different version of RabbitMQ in the same cluster, can lead to failure.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: RabbitmqMemoryHigh
-      expr: 'rabbitmq_process_resident_memory_bytes / rabbitmq_resident_memory_limit_bytes * 100 > 90'
+      expr: 'rabbitmq_process_resident_memory_bytes / rabbitmq_resident_memory_limit_bytes * 100 > 90 and rabbitmq_resident_memory_limit_bytes > 0'
       for: 2m
       labels:
         severity: warning
@@ -42,7 +44,7 @@ groups:
         description: "A node use more than 90% of allocated RAM\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: RabbitmqFileDescriptorsUsage
-      expr: 'rabbitmq_process_open_fds / rabbitmq_process_max_fds * 100 > 90'
+      expr: 'rabbitmq_process_open_fds / rabbitmq_process_max_fds * 100 > 90 and rabbitmq_process_max_fds > 0'
       for: 2m
       labels:
         severity: warning
@@ -57,7 +59,7 @@ groups:
         severity: warning
       annotations:
         summary: RabbitMQ too many ready messages (instance {{ $labels.instance }})
-        description: "RabbitMQ too many ready messages on {{ $labels.instace }}\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+        description: "RabbitMQ too many ready messages on {{ $labels.instance }}\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: RabbitmqTooManyUnackMessages
       expr: 'sum(rabbitmq_queue_messages_unacked) BY (queue) > 1000'

@@ -5,6 +5,7 @@ groups:
   
   rules:
 
+    # Adjust the job label to match your Prometheus configuration.
     - alert: ClickhouseNodeDown
       expr: 'up{job="clickhouse"} == 0'
       for: 2m
@@ -15,7 +16,7 @@ groups:
         description: "No metrics received from ClickHouse exporter for over 2 minutes.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: ClickhouseMemoryUsageCritical
-      expr: 'ClickHouseAsyncMetrics_CGroupMemoryUsed / ClickHouseAsyncMetrics_CGroupMemoryTotal * 100 > 90'
+      expr: 'ClickHouseAsyncMetrics_CGroupMemoryUsed / ClickHouseAsyncMetrics_CGroupMemoryTotal * 100 > 90 and ClickHouseAsyncMetrics_CGroupMemoryTotal > 0'
       for: 5m
       labels:
         severity: critical
@@ -24,7 +25,7 @@ groups:
         description: "Memory usage is critically high, over 90%.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: ClickhouseMemoryUsageWarning
-      expr: 'ClickHouseAsyncMetrics_CGroupMemoryUsed / ClickHouseAsyncMetrics_CGroupMemoryTotal * 100 > 80'
+      expr: 'ClickHouseAsyncMetrics_CGroupMemoryUsed / ClickHouseAsyncMetrics_CGroupMemoryTotal * 100 > 80 and ClickHouseAsyncMetrics_CGroupMemoryTotal > 0'
       for: 5m
       labels:
         severity: warning
@@ -87,16 +88,6 @@ groups:
         description: "There are too few live replicas available, risking data loss and service disruption.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     # Please replace the threshold with an appropriate value
-    - alert: ClickhouseHighNetworkTraffic
-      expr: 'ClickHouseMetrics_NetworkSend > 250 or ClickHouseMetrics_NetworkReceive > 250'
-      for: 5m
-      labels:
-        severity: warning
-      annotations:
-        summary: ClickHouse High Network Traffic (instance {{ $labels.instance }})
-        description: "Network traffic is unusually high, may affect cluster performance.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
-
-    # Please replace the threshold with an appropriate value
     - alert: ClickhouseHighTcpConnections
       expr: 'ClickHouseMetrics_TCPConnection > 400'
       for: 5m
@@ -106,17 +97,18 @@ groups:
         summary: ClickHouse High TCP Connections (instance {{ $labels.instance }})
         description: "High number of TCP connections, indicating heavy client or inter-cluster communication.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
+    # Adjust the threshold based on your cluster size and expected replication traffic.
     - alert: ClickhouseInterserverConnectionIssues
-      expr: 'increase(ClickHouseMetrics_InterserverConnection[5m]) > 0'
-      for: 1m
+      expr: 'ClickHouseMetrics_InterserverConnection > 50'
+      for: 5m
       labels:
         severity: warning
       annotations:
         summary: ClickHouse Interserver Connection Issues (instance {{ $labels.instance }})
-        description: "An increase in interserver connections may indicate replication or distributed query handling issues.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+        description: "High number of interserver connections may indicate replication or distributed query handling issues.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: ClickhouseZookeeperConnectionIssues
-      expr: 'avg(ClickHouseMetrics_ZooKeeperSession) != 1'
+      expr: 'ClickHouseMetrics_ZooKeeperSession != 1'
       for: 3m
       labels:
         severity: warning

@@ -24,7 +24,7 @@ groups:
         description: "The number of subscription backlog entries is over 100k\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: PulsarTopicLargeBacklogStorageSize
-      expr: 'sum(pulsar_storage_size > 5*1024*1024*1024) by (topic)'
+      expr: 'sum(pulsar_storage_size) by (topic) > 5*1024*1024*1024'
       for: 1h
       labels:
         severity: warning
@@ -33,7 +33,7 @@ groups:
         description: "The topic backlog storage size is over 5 GB\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: PulsarTopicVeryLargeBacklogStorageSize
-      expr: 'sum(pulsar_storage_size > 20*1024*1024*1024) by (topic)'
+      expr: 'sum(pulsar_storage_size) by (topic) > 20*1024*1024*1024'
       for: 1h
       labels:
         severity: critical
@@ -78,7 +78,7 @@ groups:
         description: "Observing Readonly Bookies\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: PulsarHighNumberOfFunctionErrors
-      expr: 'sum((rate(pulsar_function_user_exceptions_total{}[1m]) + rate(pulsar_function_system_exceptions_total{}[1m])) > 10) by (name)'
+      expr: 'sum(rate(pulsar_function_user_exceptions_total[1m]) + rate(pulsar_function_system_exceptions_total[1m])) by (name) > 10'
       for: 1m
       labels:
         severity: critical
@@ -87,7 +87,7 @@ groups:
         description: "Observing more than 10 Function errors per minute\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: PulsarHighNumberOfSinkErrors
-      expr: 'sum(rate(pulsar_sink_sink_exceptions_total{}[1m]) > 10) by (name)'
+      expr: 'sum(rate(pulsar_sink_sink_exceptions_total[1m])) by (name) > 10'
       for: 1m
       labels:
         severity: critical

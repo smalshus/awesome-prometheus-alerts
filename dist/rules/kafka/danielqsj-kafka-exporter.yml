@@ -14,11 +14,11 @@ groups:
         summary: Kafka topics replicas (instance {{ $labels.instance }})
         description: "Kafka topic in-sync partition\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
-    - alert: KafkaConsumersGroup
-      expr: 'sum(kafka_consumergroup_lag) by (consumergroup) > 50'
+    - alert: KafkaConsumerGroupLag
+      expr: 'sum(kafka_consumergroup_lag) by (consumergroup) > 10000'
       for: 1m
       labels:
-        severity: critical
+        severity: warning
       annotations:
-        summary: Kafka consumers group (instance {{ $labels.instance }})
-        description: "Kafka consumers group\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+        summary: Kafka consumer group lag (instance {{ $labels.instance }})
+        description: "Kafka consumer group {{ $labels.consumergroup }} is lagging behind ({{ $value }} messages)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"

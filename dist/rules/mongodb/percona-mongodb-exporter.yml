@@ -5,18 +5,20 @@ groups:
   
   rules:
 
+    # 1m delay allows a restart without triggering an alert.
     - alert: MongodbDown
       expr: 'mongodb_up == 0'
-      for: 0m
+      for: 1m
       labels:
         severity: critical
       annotations:
         summary: MongoDB Down (instance {{ $labels.instance }})
         description: "MongoDB instance is down\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
+    # 1m delay allows a restart without triggering an alert.
     - alert: MongodbReplicaMemberUnhealthy
       expr: 'mongodb_rs_members_health == 0'
-      for: 0m
+      for: 1m
       labels:
         severity: critical
       annotations:
@@ -32,6 +34,7 @@ groups:
         summary: MongoDB replication lag (instance {{ $labels.instance }})
         description: "Mongodb replication lag is more than 10s\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
+    # This query mixes old (mongodb_mongod_*) and new (mongodb_rs_*) metric names. It requires the Percona exporter to run with --compatible-mode to expose both.
     - alert: MongodbReplicationHeadroom
       expr: 'sum(avg(mongodb_mongod_replset_oplog_head_timestamp - mongodb_mongod_replset_oplog_tail_timestamp)) - sum(avg(mongodb_rs_members_optimeDate{member_state="PRIMARY"} - on (set) group_right mongodb_rs_members_optimeDate{member_state="SECONDARY"})) <= 0'
       for: 0m
@@ -60,7 +63,7 @@ groups:
         description: "Too many cursors are timing out\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: MongodbTooManyConnections
-      expr: 'avg by(instance) (rate(mongodb_ss_connections{conn_type="current"}[1m])) / avg by(instance) (sum (mongodb_ss_connections) by (instance)) * 100 > 80'
+      expr: 'mongodb_ss_connections{conn_type="current"} / (mongodb_ss_connections{conn_type="current"} + mongodb_ss_connections{conn_type="available"}) * 100 > 80'
       for: 2m
       labels:
         severity: warning

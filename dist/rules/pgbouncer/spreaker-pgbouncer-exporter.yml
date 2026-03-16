@@ -21,10 +21,10 @@ groups:
         severity: warning
       annotations:
         summary: PGBouncer errors (instance {{ $labels.instance }})
-        description: "PGBouncer is logging errors. This may be due to a a server restart or an admin typing commands at the pgbouncer console.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+        description: "PGBouncer is logging errors. This may be due to a server restart or an admin typing commands at the pgbouncer console.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: PgbouncerMaxConnections
-      expr: 'increase(pgbouncer_errors_count{errmsg="no more connections allowed (max_client_conn)"}[30s]) > 0'
+      expr: 'increase(pgbouncer_errors_count{errmsg="no more connections allowed (max_client_conn)"}[2m]) > 0'
       for: 0m
       labels:
         severity: critical

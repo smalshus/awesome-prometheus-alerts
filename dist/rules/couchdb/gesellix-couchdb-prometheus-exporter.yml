@@ -42,7 +42,7 @@ groups:
         description: "CouchDB is using more than 90% of allowed OS file descriptors, may fail to open new files\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: Couchdb5xxErrorRatioHigh
-      expr: 'rate(couchdb_httpd_status_codes{code=~"5.."}[5m]) / rate(couchdb_httpd_requests[5m]) > 0.05'
+      expr: 'rate(couchdb_httpd_status_codes{code=~"5.."}[5m]) / rate(couchdb_httpd_requests[5m]) > 0.05 and rate(couchdb_httpd_requests[5m]) > 0'
       for: 5m
       labels:
         severity: critical
@@ -153,7 +153,7 @@ groups:
       expr: 'changes(process_start_time_seconds[1h]) > 0'
       for: 1m
       labels:
-        severity: critical
+        severity: info
       annotations:
         summary: CouchDB process restarted (instance {{ $labels.instance }})
         description: "CouchDB process has restarted recently\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"

@@ -59,18 +59,20 @@ groups:
         summary: Elasticsearch Cluster Yellow (instance {{ $labels.instance }})
         description: "Elastic Cluster Yellow status\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
+    # 1m delay allows a restart without triggering an alert.
     - alert: ElasticsearchHealthyNodes
       expr: 'elasticsearch_cluster_health_number_of_nodes < 3'
-      for: 0m
+      for: 1m
       labels:
         severity: critical
       annotations:
         summary: Elasticsearch Healthy Nodes (instance {{ $labels.instance }})
         description: "Missing node in Elasticsearch cluster\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
+    # 1m delay allows a restart without triggering an alert.
     - alert: ElasticsearchHealthyDataNodes
       expr: 'elasticsearch_cluster_health_number_of_data_nodes < 3'
-      for: 0m
+      for: 1m
       labels:
         severity: critical
       annotations:
@@ -115,7 +117,7 @@ groups:
 
     - alert: ElasticsearchUnassignedShards
       expr: 'elasticsearch_cluster_health_unassigned_shards > 0'
-      for: 0m
+      for: 2m
       labels:
         severity: critical
       annotations:
@@ -141,7 +143,7 @@ groups:
         description: "No new documents for 10 min!\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: ElasticsearchHighIndexingLatency
-      expr: 'increase(elasticsearch_indices_indexing_index_time_seconds_total[1m]) / increase(elasticsearch_indices_indexing_index_total[1m]) > 0.0005'
+      expr: 'increase(elasticsearch_indices_indexing_index_time_seconds_total[1m]) / increase(elasticsearch_indices_indexing_index_total[1m]) > 0.0005 and increase(elasticsearch_indices_indexing_index_total[1m]) > 0'
       for: 10m
       labels:
         severity: warning
@@ -168,7 +170,7 @@ groups:
         description: "The query rate on Elasticsearch cluster is higher than the threshold.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: ElasticsearchHighQueryLatency
-      expr: 'increase(elasticsearch_indices_search_fetch_time_seconds[1m]) / increase(elasticsearch_indices_search_fetch_total[1m]) > 1'
+      expr: 'increase(elasticsearch_indices_search_query_time_seconds[1m]) / increase(elasticsearch_indices_search_query_total[1m]) > 1 and increase(elasticsearch_indices_search_query_total[1m]) > 0'
       for: 5m
       labels:
         severity: warning

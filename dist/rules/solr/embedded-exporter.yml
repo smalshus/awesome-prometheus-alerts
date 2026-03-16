@@ -30,7 +30,7 @@ groups:
         severity: critical
       annotations:
         summary: Solr replication errors (instance {{ $labels.instance }})
-        description: "Solr collection {{ $labels.collection }} has failed updates for replica {{ $labels.replica }} on {{ $labels.base_url }}.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+        description: "Solr collection {{ $labels.collection }} has replication errors for replica {{ $labels.replica }} on {{ $labels.base_url }}.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: SolrLowLiveNodeCount
       expr: 'solr_collections_live_nodes < 2'

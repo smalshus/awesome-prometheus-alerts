@@ -5,18 +5,20 @@ groups:
   
   rules:
 
+    # 1m delay allows a restart without triggering an alert.
     - alert: RabbitmqDown
       expr: 'rabbitmq_up == 0'
-      for: 0m
+      for: 1m
       labels:
         severity: critical
       annotations:
         summary: RabbitMQ down (instance {{ $labels.instance }})
         description: "RabbitMQ node down\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
+    # 1m delay allows a restart without triggering an alert.
     - alert: RabbitmqClusterDown
       expr: 'sum(rabbitmq_running) < 3'
-      for: 0m
+      for: 1m
       labels:
         severity: critical
       annotations:
@@ -33,13 +35,13 @@ groups:
         description: "Cluster partition\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: RabbitmqOutOfMemory
-      expr: 'rabbitmq_node_mem_used / rabbitmq_node_mem_limit * 100 > 90'
+      expr: 'rabbitmq_node_mem_used / rabbitmq_node_mem_limit * 100 > 90 and rabbitmq_node_mem_limit > 0'
       for: 2m
       labels:
         severity: warning
       annotations:
         summary: RabbitMQ out of memory (instance {{ $labels.instance }})
-        description: "Memory available for RabbmitMQ is low (< 10%)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+        description: "Memory available for RabbitMQ is low (< 10%)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: RabbitmqTooManyConnections
       expr: 'rabbitmq_connectionsTotal > 1000'
@@ -80,9 +82,10 @@ groups:
         summary: RabbitMQ slow queue consuming (instance {{ $labels.instance }})
         description: "Queue messages are consumed slowly (> 60s)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
+    # Allows a short service restart.
     - alert: RabbitmqNoConsumer
       expr: 'rabbitmq_queue_consumers == 0'
-      for: 1m
+      for: 5m
       labels:
         severity: critical
       annotations:
@@ -100,11 +103,11 @@ groups:
         description: "Queue should have only 1 consumer\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     # Indicate the exchange name in dedicated label.
-    - alert: RabbitmqUnactiveExchange
+    - alert: RabbitmqInactiveExchange
       expr: 'rate(rabbitmq_exchange_messages_published_in_total{exchange="my-exchange"}[1m]) < 5'
       for: 2m
       labels:
         severity: warning
       annotations:
-        summary: RabbitMQ unactive exchange (instance {{ $labels.instance }})
+        summary: RabbitMQ inactive exchange (instance {{ $labels.instance }})
         description: "Exchange receive less than 5 msgs per second\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"

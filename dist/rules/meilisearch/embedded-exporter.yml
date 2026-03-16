@@ -12,7 +12,7 @@ groups:
         severity: warning
       annotations:
         summary: Meilisearch index is empty (instance {{ $labels.instance }})
-        description: "Meilisearch instance is down\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+        description: "Meilisearch index {{ $labels.index }} has zero documents\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: MeilisearchHttpResponseTime
       expr: 'meilisearch_http_response_time_seconds > 0.5'

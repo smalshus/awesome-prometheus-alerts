@@ -5,9 +5,10 @@ groups:
   
   rules:
 
+    # 1m delay allows a restart without triggering an alert.
     - alert: CassandraNodeIsUnavailable
-      expr: 'sum(cassandra_endpoint_active) by (cassandra_cluster,instance,exported_endpoint) < 1'
-      for: 0m
+      expr: 'cassandra_endpoint_active < 1'
+      for: 1m
       labels:
         severity: critical
       annotations:
@@ -51,7 +52,7 @@ groups:
         description: "Some Cassandra flush writer tasks are blocked - {{ $labels.cassandra_cluster }}\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: CassandraConnectionTimeoutsTotal
-      expr: 'avg(cassandra_client_request_timeouts_total) by (cassandra_cluster,instance) > 5'
+      expr: 'sum by (cassandra_cluster,instance) (rate(cassandra_client_request_timeouts_total[5m])) > 5'
       for: 2m
       labels:
         severity: critical
@@ -102,7 +103,7 @@ groups:
         severity: critical
       annotations:
         summary: Cassandra client request write failure (instance {{ $labels.instance }})
-        description: "Read failures have occurred, ensure there are not too many unavailable nodes - {{ $labels.cassandra_cluster }}\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+        description: "Write failures have occurred, ensure there are not too many unavailable nodes - {{ $labels.cassandra_cluster }}\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: CassandraClientRequestReadFailure
       expr: 'increase(cassandra_client_request_failures_total{operation="read"}[1m]) > 0'

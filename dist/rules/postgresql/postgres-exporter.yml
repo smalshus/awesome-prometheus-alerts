@@ -5,9 +5,10 @@ groups:
   
   rules:
 
+    # 1m delay allows a restart without triggering an alert.
     - alert: PostgresqlDown
       expr: 'pg_up == 0'
-      for: 0m
+      for: 1m
       labels:
         severity: critical
       annotations:
@@ -104,24 +105,6 @@ groups:
         summary: Postgresql low XID consumption (instance {{ $labels.instance }})
         description: "Postgresql seems to be consuming transaction IDs very slowly\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
-    - alert: PostgresqlHighRateStatementTimeout
-      expr: 'rate(postgresql_errors_total{type="statement_timeout"}[1m]) > 3'
-      for: 0m
-      labels:
-        severity: critical
-      annotations:
-        summary: Postgresql high rate statement timeout (instance {{ $labels.instance }})
-        description: "Postgres transactions showing high rate of statement timeouts\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
-
-    - alert: PostgresqlHighRateDeadlock
-      expr: 'increase(postgresql_errors_total{type="deadlock_detected"}[1m]) > 1'
-      for: 0m
-      labels:
-        severity: critical
-      annotations:
-        summary: Postgresql high rate deadlock (instance {{ $labels.instance }})
-        description: "Postgres detected deadlocks\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
-
     - alert: PostgresqlUnusedReplicationSlot
       expr: '(pg_replication_slots_active == 0) and (pg_replication_is_replica == 0)'
       for: 1m
@@ -150,7 +133,7 @@ groups:
         description: "Postgres Database configuration change has occurred\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: PostgresqlSslCompressionActive
-      expr: 'sum(pg_stat_ssl_compression) > 0'
+      expr: 'sum by (instance) (pg_stat_ssl_compression) > 0'
       for: 0m
       labels:
         severity: warning
@@ -159,7 +142,7 @@ groups:
         description: "Database allows connections with SSL compression enabled. This may add significant jitter in replication delay. Replicas should turn off SSL compression via `sslcompression=0` in `recovery.conf`.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: PostgresqlTooManyLocksAcquired
-      expr: '((sum (pg_locks_count)) / (pg_settings_max_locks_per_transaction * pg_settings_max_connections)) > 0.20'
+      expr: '((sum by (instance) (pg_locks_count)) / (pg_settings_max_locks_per_transaction * pg_settings_max_connections)) > 0.20'
       for: 2m
       labels:
         severity: critical

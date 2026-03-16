@@ -42,7 +42,7 @@ groups:
         description: "Available HDFS disk space is running low.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: HadoopMapReduceTaskFailures
-      expr: 'hadoop_mapreduce_task_failures_total > 100'
+      expr: 'increase(hadoop_mapreduce_task_failures_total[1h]) > 100'
       for: 10m
       labels:
         severity: critical
@@ -60,7 +60,7 @@ groups:
         description: "The Hadoop ResourceManager is approaching its memory limit.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: HadoopYarnContainerAllocationFailures
-      expr: 'hadoop_yarn_container_allocation_failures_total > 10'
+      expr: 'increase(hadoop_yarn_container_allocation_failures_total[1h]) > 10'
       for: 10m
       labels:
         severity: warning
@@ -78,10 +78,10 @@ groups:
         description: "The HBase cluster has an unusually high number of regions.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: HadoopHbaseRegionServerHeapLow
-      expr: 'hadoop_hbase_region_server_heap_bytes / hadoop_hbase_region_server_max_heap_bytes < 0.2'
+      expr: 'hadoop_hbase_region_server_heap_bytes / hadoop_hbase_region_server_max_heap_bytes > 0.8'
       for: 10m
       labels:
-        severity: critical
+        severity: warning
       annotations:
         summary: Hadoop HBase Region Server Heap Low (instance {{ $labels.instance }})
         description: "HBase Region Servers are running low on heap space.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"

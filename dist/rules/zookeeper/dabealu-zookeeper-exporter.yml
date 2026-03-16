@@ -5,9 +5,10 @@ groups:
   
   rules:
 
+    # 1m delay allows a restart without triggering an alert.
     - alert: ZookeeperDown
       expr: 'zk_up == 0'
-      for: 0m
+      for: 1m
       labels:
         severity: critical
       annotations:
