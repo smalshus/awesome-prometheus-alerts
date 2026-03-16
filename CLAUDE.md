@@ -21,6 +21,8 @@ The project is community-driven. Most contributions are PRs adding or updating r
 
 ## Rules YAML Structure
 
+Services are listed in README.md.
+
 `_data/rules.yml` hierarchy:
 ```
 groups:
@@ -42,6 +44,8 @@ groups:
                 comments:           # optional, rendered as multiline YAML comments
                   "<comment>"
 ```
+
+Services are grouped in category. If you are not sure about the classification, ask the developer.
 
 ## Running Locally
 

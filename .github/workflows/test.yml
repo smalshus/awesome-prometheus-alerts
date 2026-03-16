@@ -27,7 +27,6 @@ jobs:
 
       - name: Build rule configuration
         run: |
-          gem install liquid-cli
           cat _data/rules.yml | yq -I 0 -o json > _data/rules.json
 
           for service in $(cat _data/rules.json | jq -r '.groups[].services[] | @base64'); do
