@@ -93,6 +93,8 @@ Collection available here: **[https://samber.github.io/awesome-prometheus-alerts
 - [Ruby](https://samber.github.io/awesome-prometheus-alerts/rules#ruby)
 - [Python](https://samber.github.io/awesome-prometheus-alerts/rules#python)
 - [Sidekiq](https://samber.github.io/awesome-prometheus-alerts/rules#sidekiq)
+- [Apache Flink](https://samber.github.io/awesome-prometheus-alerts/rules#apache-flink)
+- [Apache Spark](https://samber.github.io/awesome-prometheus-alerts/rules#apache-spark)
 
 #### Orchestrators
 - [Kubernetes](https://samber.github.io/awesome-prometheus-alerts/rules#kubernetes)
