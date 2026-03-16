@@ -16,7 +16,7 @@ groups:
         description: "Memcached instance is down on {{ $labels.instance }}\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: MemcachedConnectionLimitApproaching(>80%)
-      expr: '(memcached_current_connections / memcached_max_connections * 100) > 80'
+      expr: '(memcached_current_connections / memcached_max_connections * 100) > 80 and memcached_max_connections > 0'
       for: 2m
       labels:
         severity: warning
@@ -25,7 +25,7 @@ groups:
         description: "Memcached connection usage is above 80% on {{ $labels.instance }} (current value: {{ $value }}%)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: MemcachedConnectionLimitApproaching(>95%)
-      expr: '(memcached_current_connections / memcached_max_connections * 100) > 95'
+      expr: '(memcached_current_connections / memcached_max_connections * 100) > 95 and memcached_max_connections > 0'
       for: 2m
       labels:
         severity: critical
@@ -44,7 +44,7 @@ groups:
 
     # High memory usage is expected if the cache is well-utilized. This alert fires when it approaches the configured limit, which may cause evictions.
     - alert: MemcachedMemoryUsageHigh(>90%)
-      expr: '(memcached_current_bytes / memcached_limit_bytes * 100) > 90'
+      expr: '(memcached_current_bytes / memcached_limit_bytes * 100) > 90 and memcached_limit_bytes > 0'
       for: 5m
       labels:
         severity: warning

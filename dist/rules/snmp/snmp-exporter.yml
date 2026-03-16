@@ -18,7 +18,7 @@ groups:
         description: "SNMP device {{ $labels.instance }} is unreachable.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: SnmpInterfaceDown
-      expr: 'ifOperStatus{ifAdminStatus="1"} == 2'
+      expr: '(ifOperStatus{job=~"snmp.*"} == 2) and on(instance, job, ifIndex) (ifAdminStatus{job=~"snmp.*"} == 1)'
       for: 2m
       labels:
         severity: critical
@@ -28,7 +28,7 @@ groups:
 
     # Threshold is a rough default. Adjust based on your network environment.
     - alert: SnmpInterfaceHighInboundErrorRate
-      expr: 'rate(ifInErrors[5m]) / (rate(ifHCInUcastPkts[5m]) + rate(ifHCInBroadcastPkts[5m]) + rate(ifHCInMulticastPkts[5m])) > 0.05 and (rate(ifHCInUcastPkts[5m]) + rate(ifHCInBroadcastPkts[5m]) + rate(ifHCInMulticastPkts[5m])) > 0'
+      expr: 'rate(ifInErrors{job=~"snmp.*"}[5m]) / (rate(ifHCInUcastPkts{job=~"snmp.*"}[5m]) + rate(ifHCInBroadcastPkts{job=~"snmp.*"}[5m]) + rate(ifHCInMulticastPkts{job=~"snmp.*"}[5m])) > 0.05 and (rate(ifHCInUcastPkts{job=~"snmp.*"}[5m]) + rate(ifHCInBroadcastPkts{job=~"snmp.*"}[5m]) + rate(ifHCInMulticastPkts{job=~"snmp.*"}[5m])) > 0'
       for: 5m
       labels:
         severity: warning
@@ -38,7 +38,7 @@ groups:
 
     # Threshold is a rough default. Adjust based on your network environment.
     - alert: SnmpInterfaceHighOutboundErrorRate
-      expr: 'rate(ifOutErrors[5m]) / (rate(ifHCOutUcastPkts[5m]) + rate(ifHCOutBroadcastPkts[5m]) + rate(ifHCOutMulticastPkts[5m])) > 0.05 and (rate(ifHCOutUcastPkts[5m]) + rate(ifHCOutBroadcastPkts[5m]) + rate(ifHCOutMulticastPkts[5m])) > 0'
+      expr: 'rate(ifOutErrors{job=~"snmp.*"}[5m]) / (rate(ifHCOutUcastPkts{job=~"snmp.*"}[5m]) + rate(ifHCOutBroadcastPkts{job=~"snmp.*"}[5m]) + rate(ifHCOutMulticastPkts{job=~"snmp.*"}[5m])) > 0.05 and (rate(ifHCOutUcastPkts{job=~"snmp.*"}[5m]) + rate(ifHCOutBroadcastPkts{job=~"snmp.*"}[5m]) + rate(ifHCOutMulticastPkts{job=~"snmp.*"}[5m])) > 0'
       for: 5m
       labels:
         severity: warning
@@ -48,7 +48,7 @@ groups:
 
     # Threshold is a rough default. Adjust based on your link capacity and traffic patterns.
     - alert: SnmpInterfaceHighBandwidthUsageInbound
-      expr: 'rate(ifHCInOctets[5m]) * 8 / ifSpeed > 0.80 and ifSpeed > 0'
+      expr: 'rate(ifHCInOctets{job=~"snmp.*"}[5m]) * 8 / ifSpeed > 0.80 and ifSpeed > 0'
       for: 15m
       labels:
         severity: warning
@@ -58,7 +58,7 @@ groups:
 
     # Threshold is a rough default. Adjust based on your link capacity and traffic patterns.
     - alert: SnmpInterfaceHighBandwidthUsageOutbound
-      expr: 'rate(ifHCOutOctets[5m]) * 8 / ifSpeed > 0.80 and ifSpeed > 0'
+      expr: 'rate(ifHCOutOctets{job=~"snmp.*"}[5m]) * 8 / ifSpeed > 0.80 and ifSpeed > 0'
       for: 15m
       labels:
         severity: warning
