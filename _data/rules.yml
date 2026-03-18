@@ -81,7 +81,7 @@ groups:
                 query: "min_over_time(prometheus_notifications_queue_length[10m]) > 0"
                 severity: warning
               - name: Prometheus AlertManager notification failing
-                description: Alertmanager is failing sending notifications
+                description: "Alertmanager is failing sending notifications ({{ $value }} notifications/s)"
                 query: "rate(alertmanager_notifications_failed_total[1m]) > 0"
                 severity: critical
               - name: Prometheus target empty
@@ -94,13 +94,13 @@ groups:
                 severity: warning
                 for: 5m
               - name: Prometheus large scrape
-                description: Prometheus has many scrapes that exceed the sample limit
+                description: "Prometheus has many scrapes that exceed the sample limit ({{ $value }} scrapes)"
                 query: "increase(prometheus_target_scrapes_exceeded_sample_limit_total[10m]) > 10"
                 severity: warning
                 for: 5m
               - name: Prometheus target scrape duplicate
-                description: Prometheus has many samples rejected due to duplicate timestamps but different values
-                query: "increase(prometheus_target_scrapes_sample_duplicate_timestamp_total[5m]) > 0"
+                description: "Prometheus has many samples rejected due to duplicate timestamps but different values ({{ $value }} samples)"
+                query: "increase(prometheus_target_scrapes_sample_duplicate_timestamp_total[5m]) > 3"
                 severity: warning
               - name: Prometheus TSDB checkpoint creation failures
                 description: "Prometheus encountered {{ $value }} checkpoint creation failures"
@@ -147,7 +147,7 @@ groups:
                 severity: warning
                 for: 2m
               - name: Host memory under memory pressure
-                description: The node is under heavy memory pressure. High rate of loading memory pages from disk.
+                description: "The node is under heavy memory pressure. High rate of major page faults ({{ $value }}/s)."
                 query: "(rate(node_vmstat_pgmajfault[5m]) > 1000)"
                 severity: warning
               - name: Host Memory is underutilized
@@ -477,7 +477,7 @@ groups:
                 comments: |
                   This rule can be very noisy in dynamic infra with legitimate container start/stop/deployment.
               - name: Container High CPU utilization
-                description: Container CPU utilization is above 80%
+                description: 'Container CPU utilization is above 80% (current: {{ $value | printf "%.2f" }}%)'
                 query: '(sum(rate(container_cpu_usage_seconds_total{container!=""}[5m])) by (pod, container) / sum(container_spec_cpu_quota{container!=""}/container_spec_cpu_period{container!=""}) by (pod, container) * 100) > 80 and sum(container_spec_cpu_quota{container!=""}/container_spec_cpu_period{container!=""}) by (pod, container) > 0'
                 comments: |
                   Only fires for containers with explicit CPU limits. Containers without limits have cpu_quota=0, which is filtered out by the guard.
@@ -495,8 +495,8 @@ groups:
                 severity: warning
                 for: 2m
               - name: Container high throttle rate
-                description: Container is being throttled
-                query: 'sum(increase(container_cpu_cfs_throttled_periods_total{container!=""}[5m])) by (container, pod, namespace) / sum(increase(container_cpu_cfs_periods_total[5m])) by (container, pod, namespace) > ( 25 / 100 ) and sum(increase(container_cpu_cfs_periods_total[5m])) by (container, pod, namespace) > 0'
+                description: "Container is being throttled ({{ $value | humanizePercentage }})"
+                query: 'sum(rate(container_cpu_cfs_throttled_periods_total{container!=""}[5m])) by (container, pod, namespace) / sum(rate(container_cpu_cfs_periods_total[5m])) by (container, pod, namespace) > ( 25 / 100 ) and sum(rate(container_cpu_cfs_periods_total[5m])) by (container, pod, namespace) > 0'
                 severity: warning
                 for: 5m
               - name: Container high low change CPU usage
@@ -504,7 +504,7 @@ groups:
                 query: '(abs((sum by (instance, name) (rate(container_cpu_usage_seconds_total{name!=""}[1m])) * 100) - (sum by (instance, name) (rate(container_cpu_usage_seconds_total{name!=""}[1m] offset 1m)) * 100)) or abs((sum by (instance, name) (rate(container_cpu_usage_seconds_total{name!=""}[1m])) * 100) - (sum by (instance, name) (rate(container_cpu_usage_seconds_total{name!=""}[5m] offset 1m)) * 100))) > 25'
                 severity: info
               - name: Container Low CPU utilization
-                description: Container CPU utilization is under 20% for 1 week. Consider reducing the allocated CPU.
+                description: 'Container CPU utilization is under 20% for 1 week. Consider reducing the allocated CPU. (current: {{ $value | printf "%.2f" }}%)'
                 query: '(sum(rate(container_cpu_usage_seconds_total{container!=""}[5m])) by (pod, container) / sum(container_spec_cpu_quota{container!=""}/container_spec_cpu_period{container!=""}) by (pod, container) * 100) < 20'
                 severity: info
                 for: 7d
@@ -530,7 +530,7 @@ groups:
                 severity: warning
               - name: Blackbox slow probe
                 description: Blackbox probe took more than 1s to complete
-                query: "avg_over_time(probe_duration_seconds[1m]) > 1"
+                query: "probe_duration_seconds > 1"
                 severity: warning
                 for: 1m
               - name: Blackbox probe HTTP failure
@@ -556,12 +556,12 @@ groups:
                   See https://github.com/prometheus/blackbox_exporter/blob/master/CONFIGURATION.md#tls_config
               - name: Blackbox probe slow HTTP
                 description: HTTP request took more than 1s
-                query: "avg_over_time(probe_http_duration_seconds[1m]) > 1"
+                query: "probe_http_duration_seconds > 1"
                 severity: warning
                 for: 1m
               - name: Blackbox probe slow ping
                 description: Blackbox ping took more than 1s
-                query: "avg_over_time(probe_icmp_duration_seconds[1m]) > 1"
+                query: "probe_icmp_duration_seconds > 1"
                 severity: warning
                 for: 1m
 
@@ -691,7 +691,7 @@ groups:
                 for: 5m
                 comments: |
                   This is a gauge metric (not a counter). Checking idle < 20% means CPU usage > 80%.
-              - name: Host CPU steal noisy neighbor
+              - name: Netdata CPU steal noisy neighbor
                 description: CPU steal is > 10%. A noisy neighbor is killing VM performances or a spot instance may be out of credit.
                 query: 'netdata_cpu_cpu_percentage_average{dimension="steal"} > 10'
                 severity: warning
@@ -716,7 +716,7 @@ groups:
                 severity: warning
                 for: 2m
               - name: Netdata disk reallocated sectors
-                description: Reallocated sectors on disk
+                description: "Disk reallocated sectors detected ({{ $value }} sectors)"
                 query: "increase(netdata_smartd_log_reallocated_sectors_count_sectors_average[1m]) > 0"
                 severity: info
               - name: Netdata disk current pending sector
@@ -724,7 +724,7 @@ groups:
                 query: "netdata_smartd_log_current_pending_sector_count_sectors_average > 0"
                 severity: warning
               - name: Netdata reported uncorrectable disk sectors
-                description: Reported uncorrectable disk sectors
+                description: "Reported uncorrectable disk sectors ({{ $value }} sectors)"
                 query: "increase(netdata_smartd_log_offline_uncorrectable_sector_count_sectors_average[2m]) > 0"
                 severity: warning
 
@@ -849,7 +849,7 @@ groups:
                 severity: warning
                 for: 5m
               - name: Systemd socket refused connections
-                description: "Systemd socket {{ $labels.name }} is refusing connections. (instance {{ $labels.instance }})"
+                description: "Systemd socket {{ $labels.name }} is refusing connections. ({{ $value }} refused in last 5m, instance {{ $labels.instance }})"
                 query: 'increase(systemd_socket_refused_connections_total[5m]) > 0'
                 severity: warning
                 for: 2m
@@ -918,12 +918,12 @@ groups:
                 severity: critical
                 for: 1m
               - name: MySQL slow queries
-                description: MySQL server mysql has some new slow query.
+                description: "MySQL server mysql has some new slow query ({{ $value }} in the last minute)."
                 query: increase(mysql_global_status_slow_queries[1m]) > 0
                 severity: warning
                 for: 2m
               - name: MySQL InnoDB log waits
-                description: MySQL innodb log writes stalling
+                description: "MySQL innodb log writes stalling ({{ $value }} waits/s)"
                 query: rate(mysql_global_status_innodb_log_waits[15m]) > 10
                 severity: warning
               - name: MySQL restarted
@@ -991,7 +991,7 @@ groups:
                 severity: critical
                 for: 2m
               - name: Postgresql dead locks
-                description: PostgreSQL has dead-locks
+                description: "PostgreSQL has dead-locks ({{ $value }} in the last minute)"
                 query: 'increase(pg_stat_database_deadlocks{datname!~"template.*|postgres"}[1m]) > 5'
                 severity: warning
               - name: Postgresql high rollback rate
@@ -1318,7 +1318,7 @@ groups:
                 for: 1m
                 comments: |
                   1m delay allows a restart without triggering an alert.
-              - name: MongoDB replication lag
+              - name: MongoDB replication lag (Percona)
                 description: Mongodb replication lag is more than 10s
                 query: '(mongodb_rs_members_optimeDate{member_state="PRIMARY"} - on (set) group_right mongodb_rs_members_optimeDate{member_state="SECONDARY"}) / 1000 > 10'
                 severity: critical
@@ -1328,17 +1328,17 @@ groups:
                 severity: critical
                 comments: |
                   This query mixes old (mongodb_mongod_*) and new (mongodb_rs_*) metric names. It requires the Percona exporter to run with --compatible-mode to expose both.
-              - name: MongoDB number cursors open
+              - name: MongoDB number cursors open (Percona)
                 description: Too many cursors opened by MongoDB for clients (> 10k)
                 query: 'mongodb_ss_metrics_cursor_open{csr_type="total"} > 10 * 1000'
                 severity: warning
                 for: 2m
-              - name: MongoDB cursors timeouts
-                description: Too many cursors are timing out
+              - name: MongoDB cursors timeouts (Percona)
+                description: "Too many cursors are timing out ({{ $value }} in the last minute)"
                 query: "increase(mongodb_ss_metrics_cursor_timedOut[1m]) > 100"
                 severity: warning
                 for: 2m
-              - name: MongoDB too many connections
+              - name: MongoDB too many connections (Percona)
                 description: Too many connections (> 80%)
                 query: 'mongodb_ss_connections{conn_type="current"} / (mongodb_ss_connections{conn_type="current"} + mongodb_ss_connections{conn_type="available"}) * 100 > 80 and (mongodb_ss_connections{conn_type="current"} + mongodb_ss_connections{conn_type="available"}) > 0'
                 severity: warning
@@ -1348,7 +1348,7 @@ groups:
             slug: dcu-mongodb-exporter
             doc_url: https://github.com/dcu/mongodb_exporter
             rules:
-              - name: MongoDB replication lag
+              - name: MongoDB replication lag (DCU)
                 description: Mongodb replication lag is more than 10s
                 query: 'avg(mongodb_replset_member_optime_date{state="PRIMARY"}) - avg(mongodb_replset_member_optime_date{state="SECONDARY"}) > 10'
                 severity: critical
@@ -1372,17 +1372,17 @@ groups:
                 description: MongoDB Replication set member was once in a replica set but was subsequently removed
                 query: "mongodb_replset_member_state == 10"
                 severity: critical
-              - name: MongoDB number cursors open
+              - name: MongoDB number cursors open (DCU)
                 description: Too many cursors opened by MongoDB for clients (> 10k)
                 query: 'mongodb_metrics_cursor_open{state="total_open"} > 10000'
                 severity: warning
                 for: 2m
-              - name: MongoDB cursors timeouts
-                description: Too many cursors are timing out
+              - name: MongoDB cursors timeouts (DCU)
+                description: "Too many cursors are timing out ({{ $value }} in the last minute)"
                 query: "increase(mongodb_metrics_cursor_timed_out_total[1m]) > 100"
                 severity: warning
                 for: 2m
-              - name: MongoDB too many connections
+              - name: MongoDB too many connections (DCU)
                 description: Too many connections (> 80%)
                 query: 'mongodb_connections{state="current"} / (mongodb_connections{state="current"} + mongodb_connections{state="available"}) * 100 > 80 and (mongodb_connections{state="current"} + mongodb_connections{state="available"}) > 0'
                 severity: warning
@@ -1476,8 +1476,8 @@ groups:
                 query: 'increase(elasticsearch_indices_indexing_index_total{es_data_node="true"}[10m]) < 1'
                 severity: warning
               - name: Elasticsearch High Indexing Latency
-                description: "The indexing latency on Elasticsearch cluster is higher than the threshold."
-                query: "increase(elasticsearch_indices_indexing_index_time_seconds_total[1m]) / increase(elasticsearch_indices_indexing_index_total[1m]) > 0.0005 and increase(elasticsearch_indices_indexing_index_total[1m]) > 0"
+                description: "The indexing latency on Elasticsearch cluster is higher than the threshold (current value: {{ $value }}s)."
+                query: "rate(elasticsearch_indices_indexing_index_time_seconds_total[1m]) / rate(elasticsearch_indices_indexing_index_total[1m]) > 0.0005 and rate(elasticsearch_indices_indexing_index_total[1m]) > 0"
                 severity: warning
                 for: 10m
               - name: Elasticsearch High Indexing Rate
@@ -1491,8 +1491,8 @@ groups:
                 severity: warning
                 for: 5m
               - name: Elasticsearch High Query Latency
-                description: "The query latency on Elasticsearch cluster is higher than the threshold."
-                query: "increase(elasticsearch_indices_search_query_time_seconds[1m]) / increase(elasticsearch_indices_search_query_total[1m]) > 1 and increase(elasticsearch_indices_search_query_total[1m]) > 0"
+                description: "The query latency on Elasticsearch cluster is higher than the threshold (current value: {{ $value }}s)."
+                query: "rate(elasticsearch_indices_search_query_time_seconds[1m]) / rate(elasticsearch_indices_search_query_total[1m]) > 1 and rate(elasticsearch_indices_search_query_total[1m]) > 0"
                 severity: warning
                 for: 5m
 
@@ -1528,51 +1528,51 @@ groups:
                 description: "Many Cassandra compaction tasks are pending - {{ $labels.cassandra_cluster }}"
                 query: "cassandra_table_estimated_pending_compactions > 100"
                 severity: warning
-              - name: "Cassandra commitlog pending tasks"
+              - name: "Cassandra commitlog pending tasks (Instaclustr)"
                 description: "Cassandra commitlog pending tasks - {{ $labels.cassandra_cluster }}"
                 query: "cassandra_commit_log_pending_tasks > 15"
                 for: 2m
                 severity: warning
-              - name: "Cassandra compaction executor blocked tasks"
+              - name: "Cassandra compaction executor blocked tasks (Instaclustr)"
                 description: "Some Cassandra compaction executor tasks are blocked - {{ $labels.cassandra_cluster }}"
                 query: 'cassandra_thread_pool_blocked_tasks{pool="CompactionExecutor"} > 15'
                 for: 2m
                 severity: warning
-              - name: "Cassandra flush writer blocked tasks"
+              - name: "Cassandra flush writer blocked tasks (Instaclustr)"
                 description: "Some Cassandra flush writer tasks are blocked - {{ $labels.cassandra_cluster }}"
                 query: 'cassandra_thread_pool_blocked_tasks{pool="MemtableFlushWriter"} > 15'
                 for: 2m
                 severity: warning
-              - name: "Cassandra connection timeouts total"
+              - name: "Cassandra connection timeouts total (Instaclustr)"
                 description: "Some connection between nodes are ending in timeout - {{ $labels.cassandra_cluster }}"
                 query: "sum by (cassandra_cluster,instance) (rate(cassandra_client_request_timeouts_total[5m])) > 5"
                 for: 2m
                 severity: critical
-              - name: "Cassandra storage exceptions"
+              - name: "Cassandra storage exceptions (Instaclustr)"
                 description: "Something is going wrong with cassandra storage - {{ $labels.cassandra_cluster }}"
                 query: "changes(cassandra_storage_exceptions_total[1m]) > 1"
                 severity: critical
-              - name: "Cassandra tombstone dump"
+              - name: "Cassandra tombstone dump (Instaclustr)"
                 description: "Cassandra tombstone dump - {{ $labels.cassandra_cluster }}"
                 query: 'avg(cassandra_table_tombstones_scanned{quantile="0.99"}) by (instance,cassandra_cluster,keyspace) > 100'
                 for: 2m
                 severity: critical
-              - name: "Cassandra client request unavailable write"
+              - name: "Cassandra client request unavailable write (Instaclustr)"
                 description: "Some Cassandra client requests are unavailable to write - {{ $labels.cassandra_cluster }}"
                 query: 'changes(cassandra_client_request_unavailable_exceptions_total{operation="write"}[1m]) > 0'
                 for: 2m
                 severity: critical
-              - name: "Cassandra client request unavailable read"
+              - name: "Cassandra client request unavailable read (Instaclustr)"
                 description: "Some Cassandra client requests are unavailable to read - {{ $labels.cassandra_cluster }}"
                 query: 'changes(cassandra_client_request_unavailable_exceptions_total{operation="read"}[1m]) > 0'
                 for: 2m
                 severity: critical
-              - name: "Cassandra client request write failure"
+              - name: "Cassandra client request write failure (Instaclustr)"
                 description: "Write failures have occurred, ensure there are not too many unavailable nodes - {{ $labels.cassandra_cluster }}"
                 query: 'increase(cassandra_client_request_failures_total{operation="write"}[1m]) > 0'
                 for: 2m
                 severity: critical
-              - name: "Cassandra client request read failure"
+              - name: "Cassandra client request read failure (Instaclustr)"
                 description: "Read failures have occurred, ensure there are not too many unavailable nodes - {{ $labels.cassandra_cluster }}"
                 query: 'increase(cassandra_client_request_failures_total{operation="read"}[1m]) > 0'
                 for: 2m
@@ -1608,17 +1608,17 @@ groups:
                 for: 1m
                 comments: |
                   1m delay allows a restart without triggering an alert.
-              - name: Cassandra commitlog pending tasks
+              - name: Cassandra commitlog pending tasks (Criteo)
                 description: Unexpected number of Cassandra commitlog pending tasks
                 query: 'cassandra_stats{name="org:apache:cassandra:metrics:commitlog:pendingtasks:value"} > 15'
                 severity: warning
                 for: 2m
-              - name: Cassandra compaction executor blocked tasks
+              - name: Cassandra compaction executor blocked tasks (Criteo)
                 description: Some Cassandra compaction executor tasks are blocked
                 query: 'cassandra_stats{name="org:apache:cassandra:metrics:threadpools:internal:compactionexecutor:currentlyblockedtasks:count"} > 0'
                 severity: warning
                 for: 2m
-              - name: Cassandra flush writer blocked tasks
+              - name: Cassandra flush writer blocked tasks (Criteo)
                 description: Some Cassandra flush writer tasks are blocked
                 query: 'cassandra_stats{name="org:apache:cassandra:metrics:threadpools:internal:memtableflushwriter:currentlyblockedtasks:count"} > 0'
                 severity: warning
@@ -1633,32 +1633,32 @@ groups:
                 query: 'cassandra_stats{name="org:apache:cassandra:metrics:threadpools:internal:antientropystage:currentlyblockedtasks:count"} > 0'
                 severity: warning
                 for: 2m
-              - name: Cassandra connection timeouts total
+              - name: Cassandra connection timeouts total (Criteo)
                 description: Some connection between nodes are ending in timeout
                 query: 'rate(cassandra_stats{name="org:apache:cassandra:metrics:connection:totaltimeouts:count"}[1m]) > 5'
                 severity: critical
                 for: 2m
-              - name: Cassandra storage exceptions
+              - name: Cassandra storage exceptions (Criteo)
                 description: Something is going wrong with cassandra storage
                 query: 'changes(cassandra_stats{name="org:apache:cassandra:metrics:storage:exceptions:count"}[1m]) > 1'
                 severity: critical
-              - name: Cassandra tombstone dump
+              - name: Cassandra tombstone dump (Criteo)
                 description: Too much tombstones scanned in queries
                 query: 'cassandra_stats{name="org:apache:cassandra:metrics:table:tombstonescannedhistogram:99thpercentile"} > 1000'
                 severity: critical
-              - name: Cassandra client request unavailable write
+              - name: Cassandra client request unavailable write (Criteo)
                 description: Write failures have occurred because too many nodes are unavailable
                 query: 'changes(cassandra_stats{name="org:apache:cassandra:metrics:clientrequest:write:unavailables:count"}[1m]) > 0'
                 severity: critical
-              - name: Cassandra client request unavailable read
+              - name: Cassandra client request unavailable read (Criteo)
                 description: Read failures have occurred because too many nodes are unavailable
                 query: 'changes(cassandra_stats{name="org:apache:cassandra:metrics:clientrequest:read:unavailables:count"}[1m]) > 0'
                 severity: critical
-              - name: Cassandra client request write failure
+              - name: Cassandra client request write failure (Criteo)
                 description: A lot of write failures encountered. A write failure is a non-timeout exception encountered during a write request. Examine the reason map to find to the root cause. The most common cause for this type of error is when batch sizes are too large.
                 query: 'cassandra_stats{name="org:apache:cassandra:metrics:clientrequest:write:failures:oneminuterate"} > 0'
                 severity: critical
-              - name: Cassandra client request read failure
+              - name: Cassandra client request read failure (Criteo)
                 description: A lot of read failures encountered. A read failure is a non-timeout exception encountered during a read request. Examine the reason map to find to the root cause. The most common cause for this type of error is when batch sizes are too large.
                 query: 'cassandra_stats{name="org:apache:cassandra:metrics:clientrequest:read:failures:oneminuterate"} > 0'
                 severity: critical
@@ -1742,12 +1742,12 @@ groups:
                 for: 3m
               - name: ClickHouse Authentication Failures
                 description: "Authentication failures detected, indicating potential security issues or misconfiguration."
-                query: "increase(ClickHouseErrorMetric_AUTHENTICATION_FAILED[5m]) > 0"
+                query: "increase(ClickHouseErrorMetric_AUTHENTICATION_FAILED[5m]) > 3"
                 severity: info
 
               - name: ClickHouse Access Denied Errors
                 description: "Access denied errors have been logged, which could indicate permission issues or unauthorized access attempts."
-                query: "increase(ClickHouseErrorMetric_RESOURCE_ACCESS_DENIED[5m]) > 0"
+                query: "increase(ClickHouseErrorMetric_RESOURCE_ACCESS_DENIED[5m]) > 3"
                 severity: info
 
               - name: ClickHouse rejected insert queries
@@ -1957,7 +1957,7 @@ groups:
                 severity: warning
                 for: 1m # allows a short service restart
               - name: RabbitMQ unroutable messages
-                description: A queue has unroutable messages
+                description: A queue has unroutable messages ({{ $value }} in the last 1m)
                 query: "increase(rabbitmq_channel_messages_unroutable_returned_total[1m]) > 0 or increase(rabbitmq_channel_messages_unroutable_dropped_total[1m]) > 0"
                 severity: warning
                 for: 2m
@@ -1989,7 +1989,7 @@ groups:
                 query: "rabbitmq_node_mem_used / rabbitmq_node_mem_limit * 100 > 90 and rabbitmq_node_mem_limit > 0"
                 severity: warning
                 for: 2m
-              - name: RabbitMQ too many connections
+              - name: RabbitMQ instance too many connections
                 description: RabbitMQ instance has too many connections (> 1000)
                 query: "rabbitmq_connectionsTotal > 1000"
                 severity: warning
@@ -2212,7 +2212,7 @@ groups:
                 severity: warning
                 for: 5m
               - name: Nats too many errors
-                description: NATS server has encountered errors in the last 5 minutes
+                description: NATS server has encountered {{ $value }} JetStream API errors in the last 5 minutes
                 query: "increase(gnatsd_varz_jetstream_stats_api_errors[5m]) > 0"
                 severity: warning
                 for: 5m
@@ -2343,7 +2343,7 @@ groups:
                 severity: warning
                 for: 2m
               - name: HAProxy server healthcheck failure
-                description: Some server healthcheck are failing on {{ $labels.server }}
+                description: Some server healthcheck are failing on {{ $labels.server }} ({{ $value }} in the last 1m)
                 query: increase(haproxy_server_check_failures_total[1m]) > 0
                 severity: warning
                 for: 1m
@@ -2355,56 +2355,56 @@ groups:
                 description: HAProxy down
                 query: "haproxy_up == 0"
                 severity: critical
-              - name: HAProxy high HTTP 4xx error rate backend
+              - name: HAProxy high HTTP 4xx error rate backend (v1)
                 description: Too many HTTP requests with status 4xx (> 5%) on backend {{ $labels.fqdn }}/{{ $labels.backend }}
                 query: 'sum by (backend) (rate(haproxy_server_http_responses_total{code="4xx"}[1m])) / sum by (backend) (rate(haproxy_server_http_responses_total[1m])) > 5 and sum by (backend) (rate(haproxy_server_http_responses_total[1m])) > 0'
                 severity: critical
                 for: 1m
-              - name: HAProxy high HTTP 5xx error rate backend
+              - name: HAProxy high HTTP 5xx error rate backend (v1)
                 description: Too many HTTP requests with status 5xx (> 5%) on backend {{ $labels.fqdn }}/{{ $labels.backend }}
                 query: 'sum by (backend) (rate(haproxy_server_http_responses_total{code="5xx"}[1m])) / sum by (backend) (rate(haproxy_server_http_responses_total[1m])) > 5 and sum by (backend) (rate(haproxy_server_http_responses_total[1m])) > 0'
                 severity: critical
                 for: 1m
-              - name: HAProxy high HTTP 4xx error rate server
+              - name: HAProxy high HTTP 4xx error rate server (v1)
                 description: Too many HTTP requests with status 4xx (> 5%) on server {{ $labels.server }}
                 query: 'sum by (server) (rate(haproxy_server_http_responses_total{code="4xx"}[1m]) * 100) / sum by (server) (rate(haproxy_server_http_responses_total[1m])) > 5 and sum by (server) (rate(haproxy_server_http_responses_total[1m])) > 0'
                 severity: critical
                 for: 1m
-              - name: HAProxy high HTTP 5xx error rate server
+              - name: HAProxy high HTTP 5xx error rate server (v1)
                 description: Too many HTTP requests with status 5xx (> 5%) on server {{ $labels.server }}
                 query: 'sum by (server) (rate(haproxy_server_http_responses_total{code="5xx"}[1m]) * 100) / sum by (server) (rate(haproxy_server_http_responses_total[1m])) > 5 and sum by (server) (rate(haproxy_server_http_responses_total[1m])) > 0'
                 severity: critical
                 for: 1m
-              - name: HAProxy server response errors
+              - name: HAProxy server response errors (v1)
                 description: Too many response errors to {{ $labels.server }} server (> 5%).
                 query: "sum by (server) (rate(haproxy_server_response_errors_total[1m]) * 100) / sum by (server) (rate(haproxy_server_http_responses_total[1m])) > 5 and sum by (server) (rate(haproxy_server_http_responses_total[1m])) > 0"
                 severity: critical
                 for: 1m
-              - name: HAProxy backend connection errors
+              - name: HAProxy backend connection errors (v1)
                 description: Too many connection errors to {{ $labels.fqdn }}/{{ $labels.backend }} backend (> 100 req/s). Request throughput may be too high.
                 query: "sum by (backend) (rate(haproxy_backend_connection_errors_total[1m])) > 100"
                 severity: critical
                 for: 1m
-              - name: HAProxy server connection errors
+              - name: HAProxy server connection errors (v1)
                 description: Too many connection errors to {{ $labels.server }} server (> 100 req/s). Request throughput may be too high.
                 query: "sum by (server) (rate(haproxy_server_connection_errors_total[1m])) > 100"
                 severity: critical
               - name: HAProxy backend max active session
                 description: HAproxy backend {{ $labels.fqdn }}/{{ $labels.backend }} is reaching session limit (> 80%).
-                query: "((sum by (backend) (avg_over_time(haproxy_backend_current_sessions[2m]) * 100) / sum by (backend) (avg_over_time(haproxy_backend_limit_sessions[2m])))) > 80 and sum by (backend) (avg_over_time(haproxy_backend_limit_sessions[2m])) > 0"
+                query: "((sum by (backend) (haproxy_backend_current_sessions * 100) / sum by (backend) (haproxy_backend_limit_sessions))) > 80 and sum by (backend) (haproxy_backend_limit_sessions) > 0"
                 severity: warning
                 for: 2m
-              - name: HAProxy pending requests
+              - name: HAProxy pending requests (v1)
                 description: Some HAProxy requests are pending on {{ $labels.fqdn }}/{{ $labels.backend }} backend
                 query: "sum by (backend) (haproxy_backend_current_queue) > 0"
                 severity: warning
                 for: 2m
-              - name: HAProxy HTTP slowing down
+              - name: HAProxy HTTP slowing down (v1)
                 description: Average request time is increasing
                 query: "avg by (backend) (haproxy_backend_http_total_time_average_seconds) > 1"
                 severity: warning
                 for: 1m
-              - name: HAProxy retry high
+              - name: HAProxy retry high (v1)
                 description: High rate of retry on {{ $labels.fqdn }}/{{ $labels.backend }} backend
                 query: "sum by (backend) (rate(haproxy_backend_retry_warnings_total[1m])) > 10"
                 severity: warning
@@ -2417,13 +2417,13 @@ groups:
                 description: HAProxy server is down
                 query: "haproxy_server_up == 0"
                 severity: critical
-              - name: HAProxy frontend security blocked requests
+              - name: HAProxy frontend security blocked requests (v1)
                 description: HAProxy is blocking requests for security reason
                 query: "sum by (frontend) (rate(haproxy_frontend_requests_denied_total[2m])) > 10"
                 severity: warning
                 for: 2m
-              - name: HAProxy server healthcheck failure
-                description: Some server healthcheck are failing on {{ $labels.server }}
+              - name: HAProxy server healthcheck failure (v1)
+                description: Some server healthcheck are failing on {{ $labels.server }} ({{ $value }} in the last 1m)
                 query: "increase(haproxy_server_check_failures_total[1m]) > 0"
                 severity: warning
                 for: 1m
@@ -2516,8 +2516,8 @@ groups:
                 severity: warning
                 for: 5m
               - name: Envoy downstream connections overflowing
-                description: "Downstream connections are being rejected due to listener overflow on {{ $labels.instance }}"
-                query: "increase(envoy_listener_downstream_cx_overflow[5m]) > 0"
+                description: "Downstream connections are being rejected due to listener overflow on {{ $labels.instance }} ({{ $value }} in the last 5m)"
+                query: "increase(envoy_listener_downstream_cx_overflow[5m]) > 5"
                 severity: warning
               - name: Envoy cluster membership empty
                 description: "Envoy cluster {{ $labels.envoy_cluster_name }} on {{ $labels.instance }} has no healthy members"
@@ -2530,22 +2530,22 @@ groups:
                 severity: warning
                 for: 5m
               - name: Envoy high cluster upstream connection failures
-                description: "High rate of upstream connection failures in cluster {{ $labels.envoy_cluster_name }} on {{ $labels.instance }}"
+                description: "High rate of upstream connection failures in cluster {{ $labels.envoy_cluster_name }} on {{ $labels.instance }} ({{ $value }} in the last 5m)"
                 query: "increase(envoy_cluster_upstream_cx_connect_fail[5m]) > 10"
                 severity: warning
                 for: 5m
               - name: Envoy high cluster upstream request timeout rate
                 description: "More than 5% of upstream requests are timing out in cluster {{ $labels.envoy_cluster_name }} on {{ $labels.instance }}"
-                query: "increase(envoy_cluster_upstream_rq_timeout[5m]) / increase(envoy_cluster_upstream_rq_completed[5m]) * 100 > 5 and increase(envoy_cluster_upstream_rq_completed[5m]) > 0"
+                query: "rate(envoy_cluster_upstream_rq_timeout[5m]) / rate(envoy_cluster_upstream_rq_completed[5m]) * 100 > 5 and rate(envoy_cluster_upstream_rq_completed[5m]) > 0"
                 severity: warning
                 for: 5m
               - name: Envoy high cluster upstream 5xx error rate
                 description: "More than 5% of upstream requests return 5xx in cluster {{ $labels.envoy_cluster_name }} on {{ $labels.instance }}"
-                query: 'increase(envoy_cluster_upstream_rq_xx{envoy_response_code_class="5"}[5m]) / increase(envoy_cluster_upstream_rq_completed[5m]) * 100 > 5 and increase(envoy_cluster_upstream_rq_completed[5m]) > 0'
+                query: 'rate(envoy_cluster_upstream_rq_xx{envoy_response_code_class="5"}[5m]) / rate(envoy_cluster_upstream_rq_completed[5m]) * 100 > 5 and rate(envoy_cluster_upstream_rq_completed[5m]) > 0'
                 severity: critical
                 for: 1m
               - name: Envoy cluster health check failures
-                description: "Health checks are consistently failing in cluster {{ $labels.envoy_cluster_name }} on {{ $labels.instance }}"
+                description: "Health checks are consistently failing in cluster {{ $labels.envoy_cluster_name }} on {{ $labels.instance }} ({{ $value }} in the last 5m)"
                 query: "increase(envoy_cluster_health_check_failure[5m]) > 5"
                 severity: warning
                 for: 5m
@@ -2555,12 +2555,12 @@ groups:
                 severity: info
                 for: 5m
               - name: Envoy listener SSL connection errors
-                description: "Envoy listener is experiencing SSL/TLS connection errors on {{ $labels.instance }}"
-                query: "increase(envoy_listener_ssl_connection_error[5m]) > 0"
+                description: "Envoy listener is experiencing SSL/TLS connection errors on {{ $labels.instance }} ({{ $value }} in the last 5m)"
+                query: "increase(envoy_listener_ssl_connection_error[5m]) > 5"
                 severity: warning
               - name: Envoy global downstream connections overflowing
-                description: "Downstream connections are being rejected due to global connection limit on {{ $labels.instance }}"
-                query: "increase(envoy_listener_downstream_global_cx_overflow[5m]) > 0"
+                description: "Downstream connections are being rejected due to global connection limit on {{ $labels.instance }} ({{ $value }} in the last 5m)"
+                query: "increase(envoy_listener_downstream_global_cx_overflow[5m]) > 5"
                 severity: critical
               - name: Envoy SSL certificate expiring soon
                 description: "SSL certificate loaded by Envoy on {{ $labels.instance }} expires in less than 7 days"
@@ -2575,11 +2575,11 @@ groups:
                 query: "envoy_cluster_circuit_breakers_default_cx_open == 1 or envoy_cluster_circuit_breakers_default_rq_open == 1"
                 severity: critical
               - name: Envoy no healthy upstream
-                description: "Upstream connection attempts failed because no healthy upstream was available in cluster {{ $labels.envoy_cluster_name }} on {{ $labels.instance }}"
+                description: "Upstream connection attempts failed because no healthy upstream was available in cluster {{ $labels.envoy_cluster_name }} on {{ $labels.instance }} ({{ $value }} in the last 5m)"
                 query: "increase(envoy_cluster_upstream_cx_none_healthy[5m]) > 0"
                 severity: critical
               - name: Envoy high downstream request timeout rate
-                description: "Downstream requests are timing out on {{ $labels.instance }}"
+                description: "Downstream requests are timing out on {{ $labels.instance }} ({{ $value }} in the last 5m)"
                 query: "increase(envoy_http_downstream_rq_timeout[5m]) > 5"
                 severity: warning
                 for: 5m
@@ -2663,8 +2663,8 @@ groups:
             doc_url: https://github.com/bakins/php-fpm-exporter
             rules:
               - name: PHP-FPM max-children reached
-                description: PHP-FPM reached max children - {{ $labels.instance }}
-                query: "sum(increase(phpfpm_max_children_reached_total[5m])) by (instance) > 0"
+                description: PHP-FPM reached max children on {{ $labels.instance }} ({{ $value }} times in the last 5m)
+                query: "sum(increase(phpfpm_max_children_reached_total[5m])) by (instance) > 3"
                 severity: warning
 
       - name: JVM
@@ -3135,13 +3135,11 @@ groups:
             doc_url: https://github.com/kubernetes/kube-state-metrics/tree/master/docs
             rules:
               - name: Kubernetes Node not ready
-                summary: Kubernetes Node ready (node {{ $labels.node }})
                 description: Node {{ $labels.node }} has been unready for a long time
                 query: 'kube_node_status_condition{condition="Ready",status="true"} == 0'
                 severity: critical
                 for: 10m
               - name: Kubernetes Node scheduling disabled
-                summary: Kubernetes node scheduling disabled (node {{ $labels.node }})
                 description: Node {{ $labels.node }} has been marked as unschedulable for more than 30 minutes.
                 query: 'kube_node_spec_taint{key="node.kubernetes.io/unschedulable"} == 1'
                 severity: warning
@@ -3150,13 +3148,11 @@ groups:
                   Kubernetes Node with disabled schedules are fine.
                   This alarm can be useful to get warned if there are nodes which are longer unscheduled.
               - name: Kubernetes Node memory pressure
-                summary: Kubernetes memory pressure (node {{ $labels.node }})
                 description: "Node {{ $labels.node }} has MemoryPressure condition"
                 query: 'kube_node_status_condition{condition="MemoryPressure",status="true"} == 1'
                 severity: critical
                 for: 2m
               - name: Kubernetes Node disk pressure
-                summary: Kubernetes disk pressure (node {{ $labels.node }})
                 description: "Node {{ $labels.node }} has DiskPressure condition"
                 query: 'kube_node_status_condition{condition="DiskPressure",status="true"} == 1'
                 severity: critical
@@ -3172,32 +3168,26 @@ groups:
                 severity: warning
                 for: 2m
               - name: Kubernetes Container oom killer
-                summary: Kubernetes container oom killer ({{ $labels.namespace }}/{{ $labels.pod }}:{{ $labels.container }})
                 description: "Container {{ $labels.container }} in pod {{ $labels.namespace }}/{{ $labels.pod }} has been OOMKilled {{ $value }} times in the last 10 minutes."
                 query: '(kube_pod_container_status_restarts_total - kube_pod_container_status_restarts_total offset 10m >= 1) and ignoring (reason) min_over_time(kube_pod_container_status_last_terminated_reason{reason="OOMKilled"}[10m]) == 1'
                 severity: warning
               - name: Kubernetes Job failed
-                summary: Kubernetes Job failed ({{ $labels.namespace }}/{{ $labels.job_name }})
                 description: "Job {{ $labels.namespace }}/{{ $labels.job_name }} failed to complete"
                 query: "kube_job_status_failed > 0"
                 severity: warning
               - name: Kubernetes Job not starting
-                summary: Kubernetes Job not starting ({{ $labels.namespace }}/{{ $labels.job_name }})
                 description: "Job {{ $labels.namespace }}/{{ $labels.job_name }} did not start for 10 minutes"
                 query: "kube_job_status_active == 0 and kube_job_status_failed == 0 and kube_job_status_succeeded == 0 and (time() - kube_job_status_start_time) > 600"
                 severity: warning
               - name: Kubernetes CronJob failing
-                summary: Kubernetes CronJob failing ({{ $labels.namespace }}/{{ $labels.cronjob }})
                 description: "CronJob {{ $labels.namespace }}/{{ $labels.cronjob }} is failing"
                 query: "(kube_cronjob_status_last_schedule_time > kube_cronjob_status_last_successful_time) AND (kube_cronjob_status_active == 0) AND (kube_cronjob_spec_suspend == 0)"
                 severity: critical
               - name: Kubernetes CronJob suspended
-                summary: Kubernetes CronJob suspended ({{ $labels.namespace }}/{{ $labels.cronjob }})
                 description: "CronJob {{ $labels.namespace }}/{{ $labels.cronjob }} is suspended"
                 query: "kube_cronjob_spec_suspend != 0"
                 severity: warning
               - name: Kubernetes PersistentVolumeClaim pending
-                summary: Kubernetes PersistentVolumeClaim pending ({{ $labels.namespace }}/{{ $labels.persistentvolumeclaim }})
                 description: "PersistentVolumeClaim {{ $labels.namespace }}/{{ $labels.persistentvolumeclaim }} is pending"
                 query: 'kube_persistentvolumeclaim_status_phase{phase="Pending"} == 1'
                 severity: warning
@@ -3212,12 +3202,10 @@ groups:
                 query: "predict_linear(kubelet_volume_stats_available_bytes[6h:5m], 4 * 24 * 3600) < 0"
                 severity: critical
               - name: Kubernetes PersistentVolume error
-                summary: Kubernetes PersistentVolumeClaim pending ({{ $labels.namespace }}/{{ $labels.persistentvolumeclaim }})
                 description: "Persistent volume {{ $labels.persistentvolume }} is in bad state"
                 query: 'kube_persistentvolume_status_phase{phase=~"Failed|Pending", job="kube-state-metrics"} > 0'
                 severity: critical
               - name: Kubernetes StatefulSet down
-                summary: Kubernetes StatefulSet down ({{ $labels.namespace }}/{{ $labels.statefulset }})
                 description: StatefulSet {{ $labels.namespace }}/{{ $labels.statefulset }} went down
                 query: "kube_statefulset_replicas != kube_statefulset_status_replicas_ready > 0"
                 severity: critical
@@ -3241,25 +3229,21 @@ groups:
                 query: "max(quantile_over_time(0.5, kube_horizontalpodautoscaler_status_desired_replicas[1d]) == kube_horizontalpodautoscaler_spec_min_replicas) by (horizontalpodautoscaler) > 3" # allow minimum 3 replicas running
                 severity: info
               - name: Kubernetes Pod not healthy
-                summary: Kubernetes Pod not healthy ({{ $labels.namespace }}/{{ $labels.pod }})
                 description: Pod {{ $labels.namespace }}/{{ $labels.pod }} has been in a non-running state for longer than 15 minutes.
                 query: 'sum by (namespace, pod) (kube_pod_status_phase{phase=~"Pending|Unknown|Failed"}) > 0'
                 severity: critical
                 for: 15m
               - name: Kubernetes pod crash looping
-                summary: Kubernetes pod crash looping ({{ $labels.namespace }}/{{ $labels.pod }})
                 description: Pod {{ $labels.namespace }}/{{ $labels.pod }} is crash looping
                 query: "increase(kube_pod_container_status_restarts_total[1m]) > 3"
                 severity: warning
                 for: 2m
               - name: Kubernetes ReplicaSet replicas mismatch
-                summary: Kubernetes ReplicasSet mismatch ({{ $labels.namespace }}/{{ $labels.replicaset }})
                 description: ReplicaSet {{ $labels.namespace }}/{{ $labels.replicaset }} replicas mismatch
                 query: "kube_replicaset_spec_replicas != kube_replicaset_status_ready_replicas"
                 severity: warning
                 for: 10m
               - name: Kubernetes Deployment replicas mismatch
-                summary: Kubernetes Deployment replicas mismatch ({{ $labels.namespace }}/{{ $labels.deployment }})
                 description: Deployment {{ $labels.namespace }}/{{ $labels.deployment }} replicas mismatch
                 query: "kube_deployment_spec_replicas != kube_deployment_status_replicas_available"
                 severity: warning
@@ -3270,55 +3254,48 @@ groups:
                 severity: warning
                 for: 10m
               - name: Kubernetes Deployment generation mismatch
-                summary: Kubernetes Deployment generation mismatch ({{ $labels.namespace }}/{{ $labels.deployment }})
                 description: Deployment {{ $labels.namespace }}/{{ $labels.deployment }} has failed but has not been rolled back.
                 query: "kube_deployment_status_observed_generation != kube_deployment_metadata_generation"
                 severity: critical
                 for: 10m
               - name: Kubernetes StatefulSet generation mismatch
-                summary: Kubernetes StatefulSet generation mismatch ({{ $labels.namespace }}/{{ $labels.statefulset }})
                 description: StatefulSet {{ $labels.namespace }}/{{ $labels.statefulset }} has failed but has not been rolled back.
                 query: "kube_statefulset_status_observed_generation != kube_statefulset_metadata_generation"
                 severity: critical
                 for: 10m
               - name: Kubernetes StatefulSet update not rolled out
-                summary: Kubernetes StatefulSet update not rolled out ({{ $labels.namespace }}/{{ $labels.statefulset }})
                 description: StatefulSet {{ $labels.namespace }}/{{ $labels.statefulset }} update has not been rolled out.
                 query: "max without (revision) (kube_statefulset_status_current_revision unless kube_statefulset_status_update_revision) * (kube_statefulset_replicas != kube_statefulset_status_replicas_updated)"
                 severity: warning
                 for: 10m
               - name: Kubernetes DaemonSet rollout stuck
-                summary: Kubernetes DaemonSet rollout stuck ({{ $labels.namespace }}/{{ $labels.daemonset }})
                 description: Some Pods of DaemonSet {{ $labels.namespace }}/{{ $labels.daemonset }} are not scheduled or not ready
                 query: "(kube_daemonset_status_number_ready / kube_daemonset_status_desired_number_scheduled * 100 < 100 and kube_daemonset_status_desired_number_scheduled > 0) or kube_daemonset_status_desired_number_scheduled - kube_daemonset_status_current_number_scheduled > 0"
                 severity: warning
                 for: 10m
               - name: Kubernetes DaemonSet misscheduled
-                summary: Kubernetes DaemonSet misscheduled ({{ $labels.namespace }}/{{ $labels.daemonset }})
                 description: Some Pods of DaemonSet {{ $labels.namespace }}/{{ $labels.daemonset }} are running where they are not supposed to run
                 query: "kube_daemonset_status_number_misscheduled > 0"
                 severity: critical
                 for: 1m
               - name: Kubernetes CronJob too long
-                summary: Kubernetes CronJob too long ({{ $labels.namespace }}/{{ $labels.cronjob }})
                 description: CronJob {{ $labels.namespace }}/{{ $labels.cronjob }} is taking more than 1h to complete.
                 query: "kube_job_status_start_time > 0 and absent(kube_job_status_completion_time) and (time() - kube_job_status_start_time) > 3600"
                 severity: warning
                 comments: |
                   Threshold should be customized for each cronjob name.
               - name: Kubernetes Job slow completion
-                summary: Kubernetes job slow completion ({{ $labels.namespace }}/{{ $labels.job_name }})
                 description: Kubernetes Job {{ $labels.namespace }}/{{ $labels.job_name }} did not complete in time.
                 query: "kube_job_spec_completions - kube_job_status_succeeded - kube_job_status_failed > 0"
                 severity: critical
                 for: 12h
               - name: Kubernetes API server errors
-                description: Kubernetes API server is experiencing high error rate
+                description: "Kubernetes API server is experiencing {{ $value | humanize }}% error rate"
                 query: 'sum(rate(apiserver_request_total{job="apiserver",code=~"(?:5..)"}[1m])) by (instance, job) / sum(rate(apiserver_request_total{job="apiserver"}[1m])) by (instance, job) * 100 > 3 and sum(rate(apiserver_request_total{job="apiserver"}[1m])) by (instance, job) > 0'
                 severity: critical
                 for: 2m
               - name: Kubernetes API client errors
-                description: Kubernetes API client is experiencing high error rate
+                description: "Kubernetes API client is experiencing {{ $value | humanize }}% error rate"
                 query: '(sum(rate(rest_client_requests_total{code=~"(4|5).."}[1m])) by (instance, job) / sum(rate(rest_client_requests_total[1m])) by (instance, job)) * 100 > 1 and sum(rate(rest_client_requests_total[1m])) by (instance, job) > 0'
                 severity: critical
                 for: 2m
@@ -3393,17 +3370,17 @@ groups:
                 query: "etcd_server_has_leader == 0"
                 severity: critical
               - name: Etcd high number of leader changes
-                description: Etcd leader changed more than 2 times during 10 minutes
+                description: "Etcd leader changed {{ $value }} times during 10 minutes"
                 query: "increase(etcd_server_leader_changes_seen_total[10m]) > 2"
                 severity: warning
-              - name: Etcd high number of failed GRPC requests
+              - name: Etcd high number of failed GRPC requests warning
                 description: More than 1% GRPC request failure detected in Etcd
                 query: 'sum(rate(grpc_server_handled_total{grpc_code=~"Internal|Unavailable|DeadlineExceeded|ResourceExhausted|Aborted|Unknown"}[1m])) BY (grpc_service, grpc_method) / sum(rate(grpc_server_handled_total[1m])) BY (grpc_service, grpc_method) > 0.01 and sum(rate(grpc_server_handled_total[1m])) BY (grpc_service, grpc_method) > 0'
                 severity: warning
                 for: 2m
                 comments: |
                   Filters to actual error codes. grpc_code!="OK" includes benign codes like NotFound, AlreadyExists, and Cancelled.
-              - name: Etcd high number of failed GRPC requests
+              - name: Etcd high number of failed GRPC requests critical
                 description: More than 5% GRPC request failure detected in Etcd
                 query: 'sum(rate(grpc_server_handled_total{grpc_code=~"Internal|Unavailable|DeadlineExceeded|ResourceExhausted|Aborted|Unknown"}[1m])) BY (grpc_service, grpc_method) / sum(rate(grpc_server_handled_total[1m])) BY (grpc_service, grpc_method) > 0.05 and sum(rate(grpc_server_handled_total[1m])) BY (grpc_service, grpc_method) > 0'
                 severity: critical
@@ -3415,12 +3392,12 @@ groups:
                 query: 'histogram_quantile(0.99, sum(rate(grpc_server_handling_seconds_bucket{grpc_type="unary"}[1m])) by (grpc_service, grpc_method, le)) > 0.15'
                 severity: warning
                 for: 2m
-              - name: Etcd high number of failed HTTP requests
+              - name: Etcd high number of failed HTTP requests warning
                 description: More than 1% HTTP failure detected in Etcd
                 query: "sum(rate(etcd_http_failed_total[1m])) BY (method) / sum(rate(etcd_http_received_total[1m])) BY (method) > 0.01 and sum(rate(etcd_http_received_total[1m])) BY (method) > 0"
                 severity: warning
                 for: 2m
-              - name: Etcd high number of failed HTTP requests
+              - name: Etcd high number of failed HTTP requests critical
                 description: More than 5% HTTP failure detected in Etcd
                 query: "sum(rate(etcd_http_failed_total[1m])) BY (method) / sum(rate(etcd_http_received_total[1m])) BY (method) > 0.05 and sum(rate(etcd_http_received_total[1m])) BY (method) > 0"
                 severity: critical
@@ -3436,7 +3413,7 @@ groups:
                 severity: warning
                 for: 2m
               - name: Etcd high number of failed proposals
-                description: Etcd server got more than 5 failed proposals past hour
+                description: "Etcd server got {{ $value }} failed proposals in the past hour"
                 query: "increase(etcd_server_proposals_failed_total[1h]) > 5"
                 severity: warning
                 for: 2m
@@ -3665,7 +3642,7 @@ groups:
               # Puma web server
               - name: GitLab Puma high queued connections
                 description: "GitLab Puma has {{ $value }} queued connections on {{ $labels.instance }}. Requests are waiting for an available worker thread."
-                query: "avg_over_time(puma_queued_connections[5m]) > 5"
+                query: "puma_queued_connections > 5"
                 severity: warning
                 for: 5m
                 comments: |
@@ -3715,7 +3692,7 @@ groups:
                   When running jobs approach the concurrency limit, new jobs will queue up.
                   Consider scaling Sidekiq workers or increasing concurrency.
               - name: GitLab Sidekiq high job completion time
-                description: "GitLab Sidekiq job average completion time on {{ $labels.instance }} is above 5 minutes."
+                description: "GitLab Sidekiq job p95 completion time on {{ $labels.instance }} is above 5 minutes ({{ $value | humanizeDuration }})."
                 query: "histogram_quantile(0.95, sum(rate(sidekiq_jobs_completion_seconds_bucket[5m])) by (le, worker)) > 300"
                 severity: warning
                 for: 10m
@@ -4042,12 +4019,12 @@ groups:
                 description: The switch appears to be down
                 query: junos_up == 0
                 severity: critical
-              - name: Juniper high Bandwidth Usage 1GiB
+              - name: Juniper critical Bandwidth Usage 1GiB
                 description: Interface is highly saturated. (> 0.90GiB/s)
                 query: "rate(junos_interface_transmit_bytes[1m]) * 8 > 1e+9 * 0.90"
                 severity: critical
                 for: 1m
-              - name: Juniper high Bandwidth Usage 1GiB
+              - name: Juniper warning Bandwidth Usage 1GiB
                 description: Interface is getting saturated. (> 0.80GiB/s)
                 query: "rate(junos_interface_transmit_bytes[1m]) * 8 > 1e+9 * 0.80"
                 severity: warning
@@ -4911,8 +4888,10 @@ groups:
             slug: thanos-sidecar
             rules:
               - name: Thanos Sidecar Bucket Operations Failed
-                description: "Thanos Sidecar {{$labels.instance}} bucket operations are failing"
-                query: 'sum by (job, instance) (rate(thanos_objstore_bucket_operation_failures_total{job=~".*thanos-sidecar.*"}[5m])) > 0'
+                description: "Thanos Sidecar {{$labels.instance}} bucket operations are failing ({{ $value | humanize }}/s)."
+                query: 'sum by (job, instance) (rate(thanos_objstore_bucket_operation_failures_total{job=~".*thanos-sidecar.*"}[5m])) > 0.05'
+                comments: |
+                  Threshold of 0.05/s avoids firing on transient single-event spikes.
                 severity: critical
                 for: 5m
               - name: Thanos Sidecar No Connection To Started Prometheus
@@ -4947,23 +4926,25 @@ groups:
             slug: thanos-ruler
             rules:
               - name: Thanos Rule Queue Is Dropping Alerts
-                description: "Thanos Rule {{$labels.instance}} is failing to queue alerts."
+                description: "Thanos Rule {{$labels.instance}} is failing to queue alerts ({{ $value | humanize }}/s)."
                 query: 'sum by (job, instance) (rate(thanos_alert_queue_alerts_dropped_total{job=~".*thanos-rule.*"}[5m])) > 0'
                 severity: critical
                 for: 5m
               - name: Thanos Rule Sender Is Failing Alerts
-                description: "Thanos Rule {{$labels.instance}} is failing to send alerts to alertmanager."
+                description: "Thanos Rule {{$labels.instance}} is failing to send alerts to alertmanager ({{ $value | humanize }}/s)."
                 query: 'sum by (job, instance) (rate(thanos_alert_sender_alerts_dropped_total{job=~".*thanos-rule.*"}[5m])) > 0'
                 severity: critical
                 for: 5m
               - name: Thanos Rule High Rule Evaluation Failures
-                description: "Thanos Rule {{$labels.instance}} is failing to evaluate rules."
+                description: "Thanos Rule {{$labels.instance}} is failing to evaluate {{$value | humanize}}% of rules."
                 query: '(sum by (job, instance) (rate(prometheus_rule_evaluation_failures_total{job=~".*thanos-rule.*"}[5m])) / sum by (job, instance) (rate(prometheus_rule_evaluations_total{job=~".*thanos-rule.*"}[5m])) * 100 > 5) and sum by (job, instance) (rate(prometheus_rule_evaluations_total{job=~".*thanos-rule.*"}[5m])) > 0'
                 severity: critical
                 for: 5m
               - name: Thanos Rule High Rule Evaluation Warnings
-                description: "Thanos Rule {{$labels.instance}} has high number of evaluation warnings."
-                query: 'sum by (job, instance) (rate(thanos_rule_evaluation_with_warnings_total{job=~".*thanos-rule.*"}[5m])) > 0'
+                description: "Thanos Rule {{$labels.instance}} has high number of evaluation warnings ({{ $value | humanize }}/s)."
+                query: 'sum by (job, instance) (rate(thanos_rule_evaluation_with_warnings_total{job=~".*thanos-rule.*"}[5m])) > 0.05'
+                comments: |
+                  Threshold of 0.05/s avoids firing on transient single-event spikes.
                 severity: info
                 for: 15m
               - name: Thanos Rule Rule Evaluation Latency High
@@ -5058,7 +5039,7 @@ groups:
                 query: changes(process_start_time_seconds{job=~".*loki.*"}[15m]) > 2
                 severity: warning
               - name: Loki request errors
-                description: The {{ $labels.job }} and {{ $labels.route }} are experiencing errors
+                description: 'The {{ $labels.job }} and {{ $labels.route }} are experiencing {{ printf "%.2f" $value }}% errors.'
                 query: '100 * sum(rate(loki_request_duration_seconds_count{status_code=~"5.."}[1m])) by (namespace, job, route) / sum(rate(loki_request_duration_seconds_count[1m])) by (namespace, job, route) > 10 and sum(rate(loki_request_duration_seconds_count[1m])) by (namespace, job, route) > 0'
                 severity: critical
                 for: 15m
@@ -5101,13 +5082,13 @@ groups:
                 query: cortex_prometheus_notifications_alertmanagers_discovered < 1
                 severity: critical
               - name: Cortex notification are being dropped
-                description: Cortex notification are being dropped due to errors (instance {{ $labels.instance }})
+                description: "Cortex notification are being dropped due to errors (instance {{ $labels.instance }}, {{ $value | humanize }}/s)."
                 query: rate(cortex_prometheus_notifications_dropped_total[5m]) > 0.05
                 comments: |
                   Threshold of 0.05/s avoids firing on transient single-event spikes.
                 severity: critical
               - name: Cortex notification error
-                description: Cortex is failing when sending alert notifications (instance {{ $labels.instance }})
+                description: "Cortex is failing when sending alert notifications (instance {{ $labels.instance }}, {{ $value | humanize }}/s)."
                 query: rate(cortex_prometheus_notifications_errors_total[5m]) > 0.05
                 comments: |
                   Threshold of 0.05/s avoids firing on transient single-event spikes.
@@ -5144,18 +5125,18 @@ groups:
                 severity: critical
                 for: 15m
               - name: Tempo compactions failing
-                description: Greater than 2 compactions have failed in the past hour.
+                description: "{{ $value }} compactions have failed in the past hour."
                 query: sum by (job) (increase(tempodb_compaction_errors_total[1h])) > 2 and sum by (job) (increase(tempodb_compaction_errors_total[5m])) > 0
                 severity: critical
                 for: 1h
                 comments: |
                   Uses a two-window approach: 1h for historical count and 5m to confirm the issue is ongoing.
               - name: Tempo polls failing
-                description: Greater than 2 blocklist polls have failed in the past hour.
+                description: "{{ $value }} blocklist polls have failed in the past hour."
                 query: sum by (job) (increase(tempodb_blocklist_poll_errors_total[1h])) > 2 and sum by (job) (increase(tempodb_blocklist_poll_errors_total[5m])) > 0
                 severity: critical
               - name: Tempo tenant index failures
-                description: Greater than 2 tenant index failures in the past hour.
+                description: "{{ $value }} tenant index failures in the past hour."
                 query: sum by (job) (increase(tempodb_blocklist_tenant_index_errors_total[1h])) > 2 and sum by (job) (increase(tempodb_blocklist_tenant_index_errors_total[5m])) > 0
                 severity: critical
               - name: Tempo no tenant index builders
@@ -5183,7 +5164,7 @@ groups:
                 severity: critical
                 for: 15m
               - name: Tempo user configurable overrides reload failing
-                description: Greater than 5 user-configurable overrides reloads have failed in the past hour.
+                description: "{{ $value }} user-configurable overrides reloads have failed in the past hour."
                 query: sum by (job) (increase(tempo_overrides_user_configurable_overrides_reload_failed_total[1h])) > 5 and sum by (job) (increase(tempo_overrides_user_configurable_overrides_reload_failed_total[5m])) > 0
                 severity: critical
               - name: Tempo compaction too many outstanding blocks warning
@@ -5201,12 +5182,12 @@ groups:
                 comments: |
                   Official Tempo mixin normalizes by backend-worker count. Adjust threshold based on your compactor configuration.
               - name: Tempo distributor usage tracker errors
-                description: Tempo distributor usage tracker errors for {{ $labels.job }} (reason {{ $labels.reason }}).
+                description: "Tempo distributor usage tracker errors for {{ $labels.job }} at {{ $value | humanize }}/s (reason {{ $labels.reason }})."
                 query: sum by (job, reason) (rate(tempo_distributor_usage_tracker_errors_total[5m])) > 0
                 severity: critical
                 for: 30m
               - name: Tempo metrics generator processor updates failing
-                description: Tempo metrics generator processor updates are failing for {{ $labels.job }}.
+                description: "Tempo metrics generator processor updates are failing for {{ $labels.job }} ({{ $value }} failures in 5m)."
                 query: sum by (job) (increase(tempo_metrics_generator_active_processors_update_failed_total[5m])) > 0
                 severity: critical
                 for: 15m
@@ -5216,7 +5197,7 @@ groups:
                 severity: warning
                 for: 15m
               - name: Tempo metrics generator collections failing
-                description: Tempo metrics generator collections are failing for {{ $labels.job }}.
+                description: "Tempo metrics generator collections are failing for {{ $labels.job }} ({{ $value }} failures in 5m)."
                 query: sum by (job) (increase(tempo_metrics_generator_registry_collections_failed_total[5m])) > 2
                 severity: critical
                 for: 5m
@@ -5293,8 +5274,10 @@ groups:
                 severity: warning
                 for: 5m
               - name: Mimir store gateway too many failed operations
-                description: Mimir store-gateway {{ $labels.job }} bucket operations are failing.
-                query: sum by (job) (rate(thanos_objstore_bucket_operation_failures_total[5m])) > 0
+                description: Mimir store-gateway {{ $labels.job }} bucket operations are failing ({{ $value | humanize }}/s).
+                query: sum by (job) (rate(thanos_objstore_bucket_operation_failures_total[5m])) > 0.05
+                comments: |
+                  Threshold of 0.05/s avoids firing on transient single-event spikes.
                 severity: warning
                 for: 5m
               - name: Mimir ring members mismatch
@@ -5335,28 +5318,28 @@ groups:
                 for: 5m
               # Blocks and TSDB
               - name: Mimir ingester TSDB head compaction failed
-                description: Mimir ingester {{ $labels.instance }} is failing to compact TSDB head.
+                description: "Mimir ingester {{ $labels.instance }} is failing to compact TSDB head ({{ $value | humanize }}/s)."
                 query: rate(cortex_ingester_tsdb_compactions_failed_total[5m]) > 0
                 severity: critical
                 for: 15m
               - name: Mimir ingester TSDB head truncation failed
-                description: Mimir ingester {{ $labels.instance }} is failing to truncate TSDB head.
+                description: "Mimir ingester {{ $labels.instance }} is failing to truncate TSDB head ({{ $value | humanize }}/s)."
                 query: rate(cortex_ingester_tsdb_head_truncations_failed_total[5m]) > 0
                 severity: critical
               - name: Mimir ingester TSDB checkpoint creation failed
-                description: Mimir ingester {{ $labels.instance }} is failing to create TSDB checkpoints.
+                description: "Mimir ingester {{ $labels.instance }} is failing to create TSDB checkpoints ({{ $value | humanize }}/s)."
                 query: rate(cortex_ingester_tsdb_checkpoint_creations_failed_total[5m]) > 0
                 severity: critical
               - name: Mimir ingester TSDB checkpoint deletion failed
-                description: Mimir ingester {{ $labels.instance }} is failing to delete TSDB checkpoints.
+                description: "Mimir ingester {{ $labels.instance }} is failing to delete TSDB checkpoints ({{ $value | humanize }}/s)."
                 query: rate(cortex_ingester_tsdb_checkpoint_deletions_failed_total[5m]) > 0
                 severity: critical
               - name: Mimir ingester TSDB WAL truncation failed
-                description: Mimir ingester {{ $labels.instance }} is failing to truncate TSDB WAL.
+                description: "Mimir ingester {{ $labels.instance }} is failing to truncate TSDB WAL ({{ $value | humanize }}/s)."
                 query: rate(cortex_ingester_tsdb_wal_truncations_failed_total[5m]) > 0
                 severity: warning
               - name: Mimir ingester TSDB WAL writes failed
-                description: Mimir ingester {{ $labels.instance }} is failing to write to TSDB WAL.
+                description: "Mimir ingester {{ $labels.instance }} is failing to write to TSDB WAL ({{ $value | humanize }}/s)."
                 query: rate(cortex_ingester_tsdb_wal_writes_failed_total[1m]) > 0
                 severity: critical
                 for: 3m
@@ -5388,7 +5371,7 @@ groups:
                 severity: critical
                 for: 15m
               - name: Mimir compactor has consecutive failures
-                description: Mimir compactor {{ $labels.instance }} has had 2+ compaction failures in the last 2 hours.
+                description: "Mimir compactor {{ $labels.instance }} has had {{ $value }} compaction failures in the last 2 hours."
                 query: increase(cortex_compactor_runs_failed_total{reason!="shutdown"}[2h]) > 1
                 severity: critical
               - name: Mimir compactor has run out of disk space
@@ -5401,7 +5384,7 @@ groups:
                 severity: critical
                 for: 15m
               - name: Mimir compactor skipped blocks
-                description: Mimir compactor has found blocks that cannot be compacted (reason {{ $labels.reason }}).
+                description: "Mimir compactor has found {{ $value }} blocks that cannot be compacted (reason {{ $labels.reason }})."
                 query: increase(cortex_compactor_blocks_marked_for_no_compaction_total[24h]) > 0
                 comments: |
                   Using 24h window per official mixin — compaction skips are rare events.
@@ -5424,33 +5407,35 @@ groups:
                 severity: warning
                 for: 5m
               - name: Mimir ruler failed ring check
-                description: Mimir ruler {{ $labels.job }} is failing ring checks.
-                query: sum by (job) (rate(cortex_ruler_ring_check_errors_total[5m])) > 0
+                description: Mimir ruler {{ $labels.job }} is failing ring checks ({{ $value | humanize }}/s).
+                query: sum by (job) (rate(cortex_ruler_ring_check_errors_total[5m])) > 0.05
+                comments: |
+                  Threshold of 0.05/s avoids firing on transient single-event spikes.
                 severity: critical
                 for: 5m
               # Alertmanager
               - name: Mimir alertmanager sync configs failing
-                description: Mimir alertmanager {{ $labels.job }} is failing to sync configs.
+                description: "Mimir alertmanager {{ $labels.job }} is failing to sync configs ({{ $value | humanize }}/s)."
                 query: rate(cortex_alertmanager_sync_configs_failed_total[5m]) > 0
                 severity: critical
                 for: 30m
               - name: Mimir alertmanager ring check failing
-                description: Mimir alertmanager {{ $labels.job }} is failing ring checks.
+                description: "Mimir alertmanager {{ $labels.job }} is failing ring checks ({{ $value | humanize }}/s)."
                 query: rate(cortex_alertmanager_ring_check_errors_total[5m]) > 0
                 severity: critical
                 for: 10m
               - name: Mimir alertmanager state merge failing
-                description: Mimir alertmanager {{ $labels.job }} is failing to merge state updates.
+                description: "Mimir alertmanager {{ $labels.job }} is failing to merge state updates ({{ $value | humanize }}/s)."
                 query: rate(cortex_alertmanager_partial_state_merges_failed_total[5m]) > 0
                 severity: critical
                 for: 10m
               - name: Mimir alertmanager replication failing
-                description: Mimir alertmanager {{ $labels.job }} is failing to replicate state.
+                description: "Mimir alertmanager {{ $labels.job }} is failing to replicate state ({{ $value | humanize }}/s)."
                 query: rate(cortex_alertmanager_state_replication_failed_total[5m]) > 0
                 severity: critical
                 for: 10m
               - name: Mimir alertmanager persist state failing
-                description: Mimir alertmanager {{ $labels.job }} is failing to persist state.
+                description: "Mimir alertmanager {{ $labels.job }} is failing to persist state ({{ $value | humanize }}/s)."
                 query: rate(cortex_alertmanager_state_persist_failed_total[15m]) > 0
                 severity: critical
                 for: 1h
@@ -5513,33 +5498,39 @@ groups:
                 severity: critical
                 for: 1m
               - name: OpenTelemetry Collector receiver refused spans
-                description: "OpenTelemetry Collector is refusing spans on {{ $labels.receiver }}"
+                description: "OpenTelemetry Collector is refusing {{ $value | humanize }}/s spans on {{ $labels.receiver }}."
                 query: 'rate(otelcol_receiver_refused_spans[5m]) > 0'
                 severity: critical
                 for: 5m
               - name: OpenTelemetry Collector receiver refused metric points
-                description: "OpenTelemetry Collector is refusing metric points on {{ $labels.receiver }}"
+                description: "OpenTelemetry Collector is refusing {{ $value | humanize }}/s metric points on {{ $labels.receiver }}."
                 query: 'rate(otelcol_receiver_refused_metric_points[5m]) > 0'
                 severity: critical
                 for: 5m
               - name: OpenTelemetry Collector receiver refused log records
-                description: "OpenTelemetry Collector is refusing log records on {{ $labels.receiver }}"
+                description: "OpenTelemetry Collector is refusing {{ $value | humanize }}/s log records on {{ $labels.receiver }}."
                 query: 'rate(otelcol_receiver_refused_log_records[5m]) > 0'
                 severity: critical
                 for: 5m
               - name: OpenTelemetry Collector exporter failed spans
-                description: "OpenTelemetry Collector failing to send spans via {{ $labels.exporter }}"
-                query: 'rate(otelcol_exporter_send_failed_spans[5m]) > 0'
+                description: "OpenTelemetry Collector failing to send {{ $value | humanize }}/s spans via {{ $labels.exporter }}."
+                query: 'rate(otelcol_exporter_send_failed_spans[5m]) > 0.05'
+                comments: |
+                  Threshold of 0.05/s avoids firing on transient single-event spikes.
                 severity: warning
                 for: 5m
               - name: OpenTelemetry Collector exporter failed metric points
-                description: "OpenTelemetry Collector failing to send metric points via {{ $labels.exporter }}"
-                query: 'rate(otelcol_exporter_send_failed_metric_points[5m]) > 0'
+                description: "OpenTelemetry Collector failing to send {{ $value | humanize }}/s metric points via {{ $labels.exporter }}."
+                query: 'rate(otelcol_exporter_send_failed_metric_points[5m]) > 0.05'
+                comments: |
+                  Threshold of 0.05/s avoids firing on transient single-event spikes.
                 severity: warning
                 for: 5m
               - name: OpenTelemetry Collector exporter failed log records
-                description: "OpenTelemetry Collector failing to send log records via {{ $labels.exporter }}"
-                query: 'rate(otelcol_exporter_send_failed_log_records[5m]) > 0'
+                description: "OpenTelemetry Collector failing to send {{ $value | humanize }}/s log records via {{ $labels.exporter }}."
+                query: 'rate(otelcol_exporter_send_failed_log_records[5m]) > 0.05'
+                comments: |
+                  Threshold of 0.05/s avoids firing on transient single-event spikes.
                 severity: warning
                 for: 5m
               - name: OpenTelemetry Collector exporter queue nearly full
@@ -5547,13 +5538,17 @@ groups:
                 query: '(otelcol_exporter_queue_size / on(instance, job, exporter) otelcol_exporter_queue_capacity) > 0.8 and otelcol_exporter_queue_capacity > 0'
                 severity: warning
               - name: OpenTelemetry Collector processor refused spans
-                description: "OpenTelemetry Collector processor {{ $labels.processor }} is refusing spans, likely due to backpressure"
-                query: 'rate(otelcol_processor_refused_spans[5m]) > 0'
+                description: "OpenTelemetry Collector processor {{ $labels.processor }} is refusing spans ({{ $value | humanize }}/s), likely due to backpressure."
+                query: 'rate(otelcol_processor_refused_spans[5m]) > 0.05'
+                comments: |
+                  Threshold of 0.05/s avoids firing on transient single-event spikes.
                 severity: warning
                 for: 5m
               - name: OpenTelemetry Collector processor refused metric points
-                description: "OpenTelemetry Collector processor {{ $labels.processor }} is refusing metric points, likely due to backpressure"
-                query: 'rate(otelcol_processor_refused_metric_points[5m]) > 0'
+                description: "OpenTelemetry Collector processor {{ $labels.processor }} is refusing metric points ({{ $value | humanize }}/s), likely due to backpressure."
+                query: 'rate(otelcol_processor_refused_metric_points[5m]) > 0.05'
+                comments: |
+                  Threshold of 0.05/s avoids firing on transient single-event spikes.
                 severity: warning
                 for: 5m
               - name: OpenTelemetry Collector high memory usage
