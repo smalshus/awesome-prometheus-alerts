@@ -7,9 +7,9 @@ groups:
 
     - alert: ProcessExporterGroupDown
       expr: 'namedprocess_namegroup_num_procs == 0'
-      for: 2m
+      for: 5m
       labels:
-        severity: critical
+        severity: warning
       annotations:
         summary: Process exporter group down (instance {{ $labels.instance }})
         description: "No processes found for group {{ $labels.groupname }}. The service may have stopped. (instance {{ $labels.instance }})\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
@@ -63,7 +63,7 @@ groups:
         description: "Process group {{ $labels.groupname }} is using {{ $value | humanize }}B of swap. (instance {{ $labels.instance }})\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: ProcessExporterZombieProcesses
-      expr: 'namedprocess_namegroup_states{state="Zombie"} > 0'
+      expr: 'namedprocess_namegroup_states{state="Zombie"} > 5'
       for: 5m
       labels:
         severity: warning
@@ -71,9 +71,9 @@ groups:
         summary: Process exporter zombie processes (instance {{ $labels.instance }})
         description: "Process group {{ $labels.groupname }} has {{ $value }} zombie processes. (instance {{ $labels.instance }})\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
-    # Threshold of 10000 switches/s is a rough default. Adjust based on the workload profile.
+    # Filters to voluntary switches only — involuntary switches are normal under CPU contention. Threshold of 50000/s is a rough default. Adjust based on workload.
     - alert: ProcessExporterHighContextSwitching
-      expr: 'rate(namedprocess_namegroup_context_switches_total[5m]) > 10000'
+      expr: 'rate(namedprocess_namegroup_context_switches_total{ctxswitchtype="voluntary"}[5m]) > 50000'
       for: 5m
       labels:
         severity: warning

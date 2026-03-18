@@ -17,6 +17,7 @@ groups:
         summary: WireGuard peer handshake too old (instance {{ $labels.instance }})
         description: "WireGuard peer {{ $labels.public_key }} on interface {{ $labels.interface }} has not had a handshake for over 5 minutes. The tunnel may be down.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
+    # This alert will fire for all offline mobile/laptop peers. Consider filtering by expected-online peers.
     - alert: WireguardPeerHandshakeNeverEstablished
       expr: 'wireguard_latest_handshake_seconds == 0'
       for: 5m

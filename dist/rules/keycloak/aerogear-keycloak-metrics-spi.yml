@@ -56,9 +56,9 @@ groups:
         summary: Keycloak high registration failure rate (instance {{ $labels.instance }})
         description: "More than 10% of registration attempts are failing in realm {{ $labels.realm }} (current value: {{ $value | printf \"%.1f\" }}%).\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
-    # Threshold of 2 seconds is a rough default. Adjust based on your performance requirements.
+    # keycloak_request_duration is in milliseconds. Threshold of 2000ms (2 seconds) is a rough default.
     - alert: KeycloakSlowRequestResponseTime
-      expr: 'sum by (method) (rate(keycloak_request_duration_sum[5m])) / sum by (method) (rate(keycloak_request_duration_count[5m])) > 2 and sum by (method) (rate(keycloak_request_duration_count[5m])) > 0'
+      expr: 'sum by (method) (rate(keycloak_request_duration_sum[5m])) / sum by (method) (rate(keycloak_request_duration_count[5m])) > 2000 and sum by (method) (rate(keycloak_request_duration_count[5m])) > 0'
       for: 5m
       labels:
         severity: warning

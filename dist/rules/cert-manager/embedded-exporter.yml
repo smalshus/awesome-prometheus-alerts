@@ -33,6 +33,7 @@ groups:
         summary: Cert-Manager certificate not ready (instance {{ $labels.instance }})
         description: "The certificate {{ $labels.name }} in namespace {{ $labels.exported_namespace }} is not ready to serve traffic.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
+    # In cert-manager 1.19+, the metric was renamed (dropped http_ prefix). Verify metric name against your version.
     - alert: Cert-managerHittingAcmeRateLimits
       expr: 'sum by (host) (rate(certmanager_http_acme_client_request_count{status="429"}[5m])) > 0'
       for: 5m

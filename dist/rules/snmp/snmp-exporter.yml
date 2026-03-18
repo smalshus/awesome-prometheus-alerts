@@ -46,7 +46,7 @@ groups:
         summary: SNMP interface high outbound error rate (instance {{ $labels.instance }})
         description: "Interface {{ $labels.ifDescr }} on {{ $labels.instance }} has an outbound error rate above 5%.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
-    # Threshold is a rough default. Adjust based on your link capacity and traffic patterns.
+    # Threshold is a rough default. ifSpeed is a Gauge32 that maxes out at ~4.29 Gbps. For 10G+ interfaces, use ifHighSpeed (in Mbps) instead.
     - alert: SnmpInterfaceHighBandwidthUsageInbound
       expr: 'rate(ifHCInOctets{job=~"snmp.*"}[5m]) * 8 / ifSpeed > 0.80 and ifSpeed > 0'
       for: 15m
@@ -56,7 +56,7 @@ groups:
         summary: SNMP interface high bandwidth usage inbound (instance {{ $labels.instance }})
         description: "Interface {{ $labels.ifDescr }} on {{ $labels.instance }} inbound utilization is above 80%.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
-    # Threshold is a rough default. Adjust based on your link capacity and traffic patterns.
+    # Threshold is a rough default. ifSpeed is a Gauge32 that maxes out at ~4.29 Gbps. For 10G+ interfaces, use ifHighSpeed (in Mbps) instead.
     - alert: SnmpInterfaceHighBandwidthUsageOutbound
       expr: 'rate(ifHCOutOctets{job=~"snmp.*"}[5m]) * 8 / ifSpeed > 0.80 and ifSpeed > 0'
       for: 15m

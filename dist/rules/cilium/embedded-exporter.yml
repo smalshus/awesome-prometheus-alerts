@@ -5,6 +5,7 @@ groups:
   
   rules:
 
+    # Metric name depends on Cilium version. Use cilium_unreachable_nodes (older) or cilium_node_connectivity_status (1.14+).
     - alert: CiliumAgentUnreachableNodes
       expr: 'sum(cilium_unreachable_nodes{}) by (pod) > 0'
       for: 15m
@@ -14,6 +15,7 @@ groups:
         summary: Cilium agent unreachable nodes (instance {{ $labels.instance }})
         description: "Cilium agent {{ $labels.pod }} cannot reach {{ $value }} node(s). Check network connectivity and node health.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
+    # Metric name depends on Cilium version. Use cilium_unreachable_health_endpoints (older) or cilium_node_connectivity_status (1.14+).
     - alert: CiliumAgentUnreachableHealthEndpoints
       expr: 'sum(cilium_unreachable_health_endpoints{}) by (pod) > 0'
       for: 15m
@@ -23,6 +25,7 @@ groups:
         summary: Cilium agent unreachable health endpoints (instance {{ $labels.instance }})
         description: "Cilium agent {{ $labels.pod }} cannot reach {{ $value }} health endpoint(s). Node-to-node health probes are failing.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
+    # Metric name depends on Cilium version. Use cilium_controllers_failing (older) or cilium_controllers_runs_total (1.14+).
     - alert: CiliumAgentFailingControllers
       expr: 'sum(cilium_controllers_failing{}) by (pod) > 0'
       for: 5m
@@ -198,6 +201,7 @@ groups:
         summary: Cilium operator low available IPAM IPs (instance {{ $labels.instance }})
         description: "Cilium operator IPAM IP pool is over 90% utilized. Allocate more IPs to avoid exhaustion.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
+    # Some Cilium versions may not have a status label on this metric. Verify against your Cilium version.
     - alert: CiliumOperatorIpamInterfaceCreationFailures
       expr: 'sum(rate(cilium_operator_ipam_interface_creation_ops{status!="success"}[5m])) by () > 0'
       for: 10m

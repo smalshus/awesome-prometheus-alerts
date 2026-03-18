@@ -33,6 +33,7 @@ groups:
         summary: Python file descriptors exhaustion (instance {{ $labels.instance }})
         description: "Python process is running out of file descriptors (> 90% used)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
+    # Gen2 collection rate > 1/s is very high. In most applications, gen2 runs are infrequent. Adjust threshold based on your workload.
     - alert: PythonGcGeneration2CollectionsHigh
       expr: 'rate(python_gc_collections_total{generation="2"}[5m]) > 1'
       for: 5m

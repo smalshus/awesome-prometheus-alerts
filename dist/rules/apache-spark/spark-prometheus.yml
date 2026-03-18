@@ -51,7 +51,7 @@ groups:
     # Fires when more than 10% of executor time is spent in garbage collection.
     # This metric comes from the PrometheusResource endpoint (/metrics/executors/prometheus/).
     - alert: SparkExecutorHighGcTime
-      expr: 'metrics_executor_totalGCTime / (metrics_executor_totalDuration > 0) > 0.1'
+      expr: 'metrics_executor_totalGCTime_seconds_total / (metrics_executor_totalDuration > 0) > 0.1'
       for: 5m
       labels:
         severity: warning
@@ -60,7 +60,7 @@ groups:
         description: "Spark executor {{ $labels.executor_id }} in {{ $labels.application_name }} is spending too much time in GC.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: SparkExecutorAllTasksFailing
-      expr: 'metrics_executor_failedTasks > 0 and metrics_executor_completedTasks == 0'
+      expr: 'metrics_executor_failedTasks_total > 0 and metrics_executor_completedTasks == 0'
       for: 5m
       labels:
         severity: critical
@@ -69,7 +69,7 @@ groups:
         description: "Spark executor {{ $labels.executor_id }} has only failing tasks ({{ $value }} failed, 0 completed).\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: SparkExecutorHighTaskFailureRate
-      expr: 'metrics_executor_failedTasks / (metrics_executor_totalTasks > 0) > 0.1'
+      expr: 'metrics_executor_failedTasks_total / (metrics_executor_totalTasks_total > 0) > 0.1'
       for: 5m
       labels:
         severity: warning
@@ -77,9 +77,10 @@ groups:
         summary: Spark executor high task failure rate (instance {{ $labels.instance }})
         description: "Spark executor {{ $labels.executor_id }} has a task failure rate above 10%.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
+    # diskUsed is a gauge, not a counter — do not use rate(). Threshold of 1GB is a rough default.
     # Disk spilling indicates insufficient memory for the workload.
     - alert: SparkExecutorHighDiskSpill
-      expr: 'rate(metrics_executor_diskUsed_bytes[5m]) > 0'
+      expr: 'metrics_executor_diskUsed_bytes > 1e9'
       for: 5m
       labels:
         severity: warning

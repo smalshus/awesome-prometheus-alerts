@@ -39,13 +39,13 @@ groups:
 
     # Threshold is workload-dependent. Applications with heavy CGo or blocking I/O may legitimately use more OS threads. Adjust to match your baseline.
     - alert: GoThreadCountHigh
-      expr: 'go_threads > 50'
+      expr: 'go_threads > 500'
       for: 5m
       labels:
         severity: warning
       annotations:
         summary: Go thread count high (instance {{ $labels.instance }})
-        description: "Go OS thread count is high (> 50), potential blocking syscall or CGo leak\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+        description: "Go OS thread count is high (> 500), potential blocking syscall or CGo leak\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     # Threshold is a rough default. Adjust based on your application's normal object count.
     - alert: GoHeapObjectsCountHigh

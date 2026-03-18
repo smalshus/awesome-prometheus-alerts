@@ -24,6 +24,7 @@ groups:
         summary: Ruby heap free slots high (instance {{ $labels.instance }})
         description: "Ruby heap has too many free slots (> 500k), memory fragmentation after large allocations\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
+    # Major GC rate > 5/s is extremely high. Consider lowering to > 1 or > 2 for earlier detection.
     - alert: RubyMajorGcRateHigh
       expr: 'rate(ruby_major_gc_ops_total[5m]) > 5'
       for: 5m

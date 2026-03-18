@@ -24,7 +24,7 @@ groups:
         description: "Nova agent {{ $labels.hostname }} ({{ $labels.service }}) is down in zone {{ $labels.zone }}\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: OpenstackNeutronAgentDown
-      expr: 'openstack_neutron_agent_state{adminState="enabled"} == 0'
+      expr: 'openstack_neutron_agent_state{adminState="up"} == 0'
       for: 2m
       labels:
         severity: critical

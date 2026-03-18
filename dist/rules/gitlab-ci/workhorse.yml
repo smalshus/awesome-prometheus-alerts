@@ -8,7 +8,7 @@ groups:
     # Workhorse sits in front of Puma and handles Git HTTP, file uploads, and proxying.
     # Threshold from GitLab Omnibus default rules: 10% for high-traffic instances.
     - alert: GitlabWorkhorseHighErrorRate
-      expr: 'sum(rate(gitlab_workhorse_http_request_duration_seconds_count{code=~"5.."}[5m])) / sum(rate(gitlab_workhorse_http_request_duration_seconds_count[5m])) * 100 > 10'
+      expr: 'sum(rate(gitlab_workhorse_http_request_duration_seconds_count{code=~"5.."}[5m])) / sum(rate(gitlab_workhorse_http_request_duration_seconds_count[5m])) * 100 > 10 and sum(rate(gitlab_workhorse_http_request_duration_seconds_count[5m])) > 0'
       for: 5m
       labels:
         severity: critical

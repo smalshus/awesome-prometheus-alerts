@@ -5,8 +5,9 @@ groups:
   
   rules:
 
+    # grpc_code!="OK" includes non-error codes like NotFound, AlreadyExists. Consider filtering to specific error codes for less noise.
     - alert: GitlabGitalyHighGrpcErrorRate
-      expr: 'sum(rate(grpc_server_handled_total{job="gitaly",grpc_code!="OK"}[5m])) / sum(rate(grpc_server_handled_total{job="gitaly"}[5m])) * 100 > 5'
+      expr: 'sum(rate(grpc_server_handled_total{job="gitaly",grpc_code!="OK"}[5m])) / sum(rate(grpc_server_handled_total{job="gitaly"}[5m])) * 100 > 5 and sum(rate(grpc_server_handled_total{job="gitaly"}[5m])) > 0'
       for: 5m
       labels:
         severity: warning
@@ -18,7 +19,7 @@ groups:
     # concurrency limits. This directly impacts users trying to push, pull, or clone.
     # This alert is derived from the GitLab Omnibus default rules.
     - alert: GitlabGitalyResourceExhausted
-      expr: 'sum(rate(grpc_server_handled_total{job="gitaly",grpc_code="ResourceExhausted"}[5m])) / sum(rate(grpc_server_handled_total{job="gitaly"}[5m])) * 100 > 1'
+      expr: 'sum(rate(grpc_server_handled_total{job="gitaly",grpc_code="ResourceExhausted"}[5m])) / sum(rate(grpc_server_handled_total{job="gitaly"}[5m])) * 100 > 1 and sum(rate(grpc_server_handled_total{job="gitaly"}[5m])) > 0'
       for: 5m
       labels:
         severity: critical

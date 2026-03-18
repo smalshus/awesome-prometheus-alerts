@@ -65,7 +65,7 @@ groups:
 
     # Threshold is highly workload-dependent. Adjust 200 to suit your environment.
     - alert: OracleDbTooManyActiveSessions
-      expr: 'oracledb_sessions_activity{status="ACTIVE", type="USER"} > 200'
+      expr: 'oracledb_sessions_value{status="ACTIVE", type="USER"} > 200'
       for: 5m
       labels:
         severity: warning
@@ -73,10 +73,9 @@ groups:
         summary: Oracle DB too many active sessions (instance {{ $labels.instance }})
         description: "Oracle Database on {{ $labels.instance }} has too many active user sessions (current value: {{ $value }})\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
-    # High user I/O wait time indicates storage performance issues (slow disks, SAN latency, etc.).
-    # The metric is in centiseconds per second. Threshold 300 means 3 seconds of I/O wait per second of wall time.
+    # The metric from v$waitclassmetric is already a normalized rate (centiseconds per second). Threshold 300 means 3 seconds of I/O wait per second of wall time.
     - alert: OracleDbHighWaitTime(userI/o)
-      expr: 'rate(oracledb_wait_time_user_io[5m]) > 300'
+      expr: 'oracledb_wait_time_user_io > 300'
       for: 5m
       labels:
         severity: warning

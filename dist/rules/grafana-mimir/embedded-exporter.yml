@@ -231,8 +231,9 @@ groups:
         summary: Mimir ingester TSDB WAL writes failed (instance {{ $labels.instance }})
         description: "Mimir ingester {{ $labels.instance }} is failing to write to TSDB WAL.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
+    # Threshold aligned with official Mimir mixin (30 minutes).
     - alert: MimirStoreGatewayHasNotSyncedBucket
-      expr: '(time() - cortex_bucket_stores_blocks_last_successful_sync_timestamp_seconds{component="store-gateway"} > 600) and cortex_bucket_stores_blocks_last_successful_sync_timestamp_seconds{component="store-gateway"} > 0'
+      expr: '(time() - cortex_bucket_stores_blocks_last_successful_sync_timestamp_seconds{component="store-gateway"} > 1800) and cortex_bucket_stores_blocks_last_successful_sync_timestamp_seconds{component="store-gateway"} > 0'
       for: 5m
       labels:
         severity: critical
@@ -277,7 +278,7 @@ groups:
         description: "Mimir compactor {{ $labels.instance }} has not run compaction in the last 24 hours.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: MimirCompactorHasConsecutiveFailures
-      expr: 'increase(cortex_compactor_runs_failed_total[2h]) > 1'
+      expr: 'increase(cortex_compactor_runs_failed_total{reason!="shutdown"}[2h]) > 1'
       for: 0m
       labels:
         severity: critical
@@ -303,8 +304,9 @@ groups:
         summary: Mimir compactor has not uploaded blocks (instance {{ $labels.instance }})
         description: "Mimir compactor {{ $labels.instance }} has not uploaded any block in the last 24 hours.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
+    # Using 24h window per official mixin — compaction skips are rare events.
     - alert: MimirCompactorSkippedBlocks
-      expr: 'increase(cortex_compactor_blocks_marked_for_no_compaction_total[5m]) > 0'
+      expr: 'increase(cortex_compactor_blocks_marked_for_no_compaction_total[24h]) > 0'
       for: 5m
       labels:
         severity: warning

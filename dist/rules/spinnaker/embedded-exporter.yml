@@ -27,7 +27,7 @@ groups:
 
     # The 30s threshold is a rough default. Adjust based on your pipeline SLOs.
     - alert: SpinnakerOrcaQueueMessageLagHigh
-      expr: 'rate(queue_message_lag_seconds_sum[5m]) / rate(queue_message_lag_seconds_count[5m]) > 30'
+      expr: 'rate(queue_message_lag_seconds_sum[5m]) / rate(queue_message_lag_seconds_count[5m]) > 30 and rate(queue_message_lag_seconds_count[5m]) > 0'
       for: 5m
       labels:
         severity: warning

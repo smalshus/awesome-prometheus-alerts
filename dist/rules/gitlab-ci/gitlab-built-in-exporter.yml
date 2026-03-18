@@ -37,7 +37,7 @@ groups:
     # Threshold is 5% of all requests returning server errors.
     # Check GitLab logs at /var/log/gitlab/ for root cause.
     - alert: GitlabHighHttpErrorRate
-      expr: 'sum(rate(http_requests_total{status=~"5.."}[5m])) / sum(rate(http_requests_total[5m])) * 100 > 5'
+      expr: 'sum(rate(http_requests_total{status=~"5.."}[5m])) / sum(rate(http_requests_total[5m])) * 100 > 5 and sum(rate(http_requests_total[5m])) > 0'
       for: 5m
       labels:
         severity: critical
@@ -58,7 +58,7 @@ groups:
     # This metric requires the emit_sidekiq_histogram_metrics feature flag to be enabled.
     # A sustained failure rate indicates background processing issues.
     - alert: GitlabSidekiqJobsFailing
-      expr: 'rate(sidekiq_jobs_failed_total[5m]) > 0'
+      expr: 'rate(sidekiq_jobs_failed_total[5m]) > 0.1'
       for: 10m
       labels:
         severity: warning
@@ -136,6 +136,7 @@ groups:
         summary: GitLab CI pipeline creation slow (instance {{ $labels.instance }})
         description: "GitLab CI pipeline creation p95 latency on {{ $labels.instance }} is above 30 seconds.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
+    # This metric may not exist in all GitLab versions. Verify against your GitLab installation.
     - alert: GitlabCiPipelineFailuresIncreasing
       expr: 'rate(gitlab_ci_pipeline_failure_reasons[5m]) > 0'
       for: 10m
@@ -188,7 +189,7 @@ groups:
 
     # This may happen during a rolling deployment. If it persists, investigate incomplete upgrades.
     - alert: GitlabVersionMismatch
-      expr: 'count(count by (version) (deployments{version!=""})) > 1'
+      expr: 'count(count by (version) (gitlab_build_info)) > 1'
       for: 0m
       labels:
         severity: warning

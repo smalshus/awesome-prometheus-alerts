@@ -34,7 +34,7 @@ groups:
         description: "Systemd service {{ $labels.name }} has restarted {{ $value }} times in the last hour. (instance {{ $labels.instance }})\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: SystemdUnitTasksNearLimit
-      expr: 'systemd_unit_tasks_current / systemd_unit_tasks_max > 0.9 and systemd_unit_tasks_max > 0'
+      expr: 'systemd_unit_tasks_current / ignoring(type) systemd_unit_tasks_max > 0.9 and systemd_unit_tasks_max > 0'
       for: 5m
       labels:
         severity: warning
@@ -44,7 +44,7 @@ groups:
 
     - alert: SystemdSocketRefusedConnections
       expr: 'increase(systemd_socket_refused_connections_total[5m]) > 0'
-      for: 0m
+      for: 2m
       labels:
         severity: warning
       annotations:
@@ -54,7 +54,7 @@ groups:
     # Threshold of 100 connections is arbitrary. Adjust to your workload.
     - alert: SystemdSocketHighConnections
       expr: 'systemd_socket_current_connections > 100'
-      for: 0m
+      for: 2m
       labels:
         severity: warning
       annotations:

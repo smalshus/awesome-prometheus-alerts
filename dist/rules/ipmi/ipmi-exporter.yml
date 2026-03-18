@@ -118,7 +118,7 @@ groups:
     # Catches any sensor type not covered by the specific temperature/fan/voltage/current/power alerts.
     - alert: IpmiGenericSensorCritical
       expr: 'ipmi_sensor_state == 2'
-      for: 0m
+      for: 5m
       labels:
         severity: critical
       annotations:

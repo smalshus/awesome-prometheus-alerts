@@ -117,6 +117,7 @@ groups:
         summary: Tempo compaction too many outstanding blocks warning (instance {{ $labels.instance }})
         description: "There are too many outstanding compaction blocks for {{ $labels.instance }}. Consider increasing compactor resources.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
+    # Official Tempo mixin normalizes by backend-worker count. Adjust threshold based on your compactor configuration.
     - alert: TempoCompactionTooManyOutstandingBlocksCritical
       expr: 'sum by (instance) (tempodb_compaction_outstanding_blocks) > 250'
       for: 24h

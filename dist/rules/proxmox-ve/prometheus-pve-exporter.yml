@@ -36,7 +36,7 @@ groups:
         description: "Proxmox VE CPU usage is above 90% on {{ $labels.id }}. Current value: {{ $value | printf \"%.2f\" }}%\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: PveHighMemoryUsage
-      expr: 'pve_memory_usage_bytes / pve_memory_size_bytes * 100 > 90'
+      expr: 'pve_memory_usage_bytes / pve_memory_size_bytes * 100 > 90 and pve_memory_size_bytes > 0'
       for: 5m
       labels:
         severity: warning
