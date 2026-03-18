@@ -130,4 +130,4 @@ groups:
         severity: warning
       annotations:
         summary: HAProxy server healthcheck failure (instance {{ $labels.instance }})
-        description: "Some server healthcheck are failing on {{ $labels.server }}\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+        description: "Some server healthcheck are failing on {{ $labels.server }} ({{ $value }} in the last 1m)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"

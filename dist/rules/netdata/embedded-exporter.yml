@@ -15,13 +15,13 @@ groups:
         summary: Netdata high cpu usage (instance {{ $labels.instance }})
         description: "Netdata high CPU usage (> 80%)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
-    - alert: HostCpuStealNoisyNeighbor
+    - alert: NetdataCpuStealNoisyNeighbor
       expr: 'netdata_cpu_cpu_percentage_average{dimension="steal"} > 10'
       for: 5m
       labels:
         severity: warning
       annotations:
-        summary: Host CPU steal noisy neighbor (instance {{ $labels.instance }})
+        summary: Netdata CPU steal noisy neighbor (instance {{ $labels.instance }})
         description: "CPU steal is > 10%. A noisy neighbor is killing VM performances or a spot instance may be out of credit.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: NetdataHighMemoryUsage
@@ -67,7 +67,7 @@ groups:
         severity: info
       annotations:
         summary: Netdata disk reallocated sectors (instance {{ $labels.instance }})
-        description: "Reallocated sectors on disk\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+        description: "Disk reallocated sectors detected ({{ $value }} sectors)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: NetdataDiskCurrentPendingSector
       expr: 'netdata_smartd_log_current_pending_sector_count_sectors_average > 0'
@@ -85,4 +85,4 @@ groups:
         severity: warning
       annotations:
         summary: Netdata reported uncorrectable disk sectors (instance {{ $labels.instance }})
-        description: "Reported uncorrectable disk sectors\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+        description: "Reported uncorrectable disk sectors ({{ $value }} sectors)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"

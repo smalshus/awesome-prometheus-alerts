@@ -24,7 +24,7 @@ groups:
         severity: critical
       annotations:
         summary: OpenTelemetry Collector receiver refused spans (instance {{ $labels.instance }})
-        description: "OpenTelemetry Collector is refusing spans on {{ $labels.receiver }}\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+        description: "OpenTelemetry Collector is refusing {{ $value | humanize }}/s spans on {{ $labels.receiver }}.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: OpentelemetryCollectorReceiverRefusedMetricPoints
       expr: 'rate(otelcol_receiver_refused_metric_points[5m]) > 0'
@@ -33,7 +33,7 @@ groups:
         severity: critical
       annotations:
         summary: OpenTelemetry Collector receiver refused metric points (instance {{ $labels.instance }})
-        description: "OpenTelemetry Collector is refusing metric points on {{ $labels.receiver }}\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+        description: "OpenTelemetry Collector is refusing {{ $value | humanize }}/s metric points on {{ $labels.receiver }}.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: OpentelemetryCollectorReceiverRefusedLogRecords
       expr: 'rate(otelcol_receiver_refused_log_records[5m]) > 0'
@@ -42,34 +42,37 @@ groups:
         severity: critical
       annotations:
         summary: OpenTelemetry Collector receiver refused log records (instance {{ $labels.instance }})
-        description: "OpenTelemetry Collector is refusing log records on {{ $labels.receiver }}\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+        description: "OpenTelemetry Collector is refusing {{ $value | humanize }}/s log records on {{ $labels.receiver }}.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
+    # Threshold of 0.05/s avoids firing on transient single-event spikes.
     - alert: OpentelemetryCollectorExporterFailedSpans
-      expr: 'rate(otelcol_exporter_send_failed_spans[5m]) > 0'
+      expr: 'rate(otelcol_exporter_send_failed_spans[5m]) > 0.05'
       for: 5m
       labels:
         severity: warning
       annotations:
         summary: OpenTelemetry Collector exporter failed spans (instance {{ $labels.instance }})
-        description: "OpenTelemetry Collector failing to send spans via {{ $labels.exporter }}\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+        description: "OpenTelemetry Collector failing to send {{ $value | humanize }}/s spans via {{ $labels.exporter }}.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
+    # Threshold of 0.05/s avoids firing on transient single-event spikes.
     - alert: OpentelemetryCollectorExporterFailedMetricPoints
-      expr: 'rate(otelcol_exporter_send_failed_metric_points[5m]) > 0'
+      expr: 'rate(otelcol_exporter_send_failed_metric_points[5m]) > 0.05'
       for: 5m
       labels:
         severity: warning
       annotations:
         summary: OpenTelemetry Collector exporter failed metric points (instance {{ $labels.instance }})
-        description: "OpenTelemetry Collector failing to send metric points via {{ $labels.exporter }}\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+        description: "OpenTelemetry Collector failing to send {{ $value | humanize }}/s metric points via {{ $labels.exporter }}.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
+    # Threshold of 0.05/s avoids firing on transient single-event spikes.
     - alert: OpentelemetryCollectorExporterFailedLogRecords
-      expr: 'rate(otelcol_exporter_send_failed_log_records[5m]) > 0'
+      expr: 'rate(otelcol_exporter_send_failed_log_records[5m]) > 0.05'
       for: 5m
       labels:
         severity: warning
       annotations:
         summary: OpenTelemetry Collector exporter failed log records (instance {{ $labels.instance }})
-        description: "OpenTelemetry Collector failing to send log records via {{ $labels.exporter }}\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+        description: "OpenTelemetry Collector failing to send {{ $value | humanize }}/s log records via {{ $labels.exporter }}.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: OpentelemetryCollectorExporterQueueNearlyFull
       expr: '(otelcol_exporter_queue_size / on(instance, job, exporter) otelcol_exporter_queue_capacity) > 0.8 and otelcol_exporter_queue_capacity > 0'
@@ -80,23 +83,25 @@ groups:
         summary: OpenTelemetry Collector exporter queue nearly full (instance {{ $labels.instance }})
         description: "OpenTelemetry Collector exporter {{ $labels.exporter }} queue is over 80% full\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
+    # Threshold of 0.05/s avoids firing on transient single-event spikes.
     - alert: OpentelemetryCollectorProcessorRefusedSpans
-      expr: 'rate(otelcol_processor_refused_spans[5m]) > 0'
+      expr: 'rate(otelcol_processor_refused_spans[5m]) > 0.05'
       for: 5m
       labels:
         severity: warning
       annotations:
         summary: OpenTelemetry Collector processor refused spans (instance {{ $labels.instance }})
-        description: "OpenTelemetry Collector processor {{ $labels.processor }} is refusing spans, likely due to backpressure\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+        description: "OpenTelemetry Collector processor {{ $labels.processor }} is refusing spans ({{ $value | humanize }}/s), likely due to backpressure.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
+    # Threshold of 0.05/s avoids firing on transient single-event spikes.
     - alert: OpentelemetryCollectorProcessorRefusedMetricPoints
-      expr: 'rate(otelcol_processor_refused_metric_points[5m]) > 0'
+      expr: 'rate(otelcol_processor_refused_metric_points[5m]) > 0.05'
       for: 5m
       labels:
         severity: warning
       annotations:
         summary: OpenTelemetry Collector processor refused metric points (instance {{ $labels.instance }})
-        description: "OpenTelemetry Collector processor {{ $labels.processor }} is refusing metric points, likely due to backpressure\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+        description: "OpenTelemetry Collector processor {{ $labels.processor }} is refusing metric points ({{ $value | humanize }}/s), likely due to backpressure.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: OpentelemetryCollectorHighMemoryUsage
       expr: '(otelcol_process_runtime_heap_alloc_bytes{job=~".*otel.*collector.*"} / on(instance, job) otelcol_process_runtime_total_sys_memory_bytes{job=~".*otel.*collector.*"}) > 0.9'

@@ -103,7 +103,7 @@ groups:
         severity: warning
       annotations:
         summary: Nats too many errors (instance {{ $labels.instance }})
-        description: "NATS server has encountered errors in the last 5 minutes\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+        description: "NATS server has encountered {{ $value }} JetStream API errors in the last 5 minutes\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: NatsJetstreamAccountsExceeded
       expr: 'sum(gnatsd_varz_jetstream_stats_accounts) > 100'

@@ -105,14 +105,15 @@ groups:
         summary: Mimir ingested data too far in the future (instance {{ $labels.instance }})
         description: "Mimir ingester {{ $labels.job }} has ingested samples with timestamps more than 1 hour in the future.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
+    # Threshold of 0.05/s avoids firing on transient single-event spikes.
     - alert: MimirStoreGatewayTooManyFailedOperations
-      expr: 'sum by (job) (rate(thanos_objstore_bucket_operation_failures_total[5m])) > 0'
+      expr: 'sum by (job) (rate(thanos_objstore_bucket_operation_failures_total[5m])) > 0.05'
       for: 5m
       labels:
         severity: warning
       annotations:
         summary: Mimir store gateway too many failed operations (instance {{ $labels.instance }})
-        description: "Mimir store-gateway {{ $labels.job }} bucket operations are failing.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+        description: "Mimir store-gateway {{ $labels.job }} bucket operations are failing ({{ $value | humanize }}/s).\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: MimirRingMembersMismatch
       expr: 'max by (name, job) (sum by (name, job, instance) (cortex_ring_members)) != min by (name, job) (sum by (name, job, instance) (cortex_ring_members))'
@@ -184,7 +185,7 @@ groups:
         severity: critical
       annotations:
         summary: Mimir ingester TSDB head compaction failed (instance {{ $labels.instance }})
-        description: "Mimir ingester {{ $labels.instance }} is failing to compact TSDB head.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+        description: "Mimir ingester {{ $labels.instance }} is failing to compact TSDB head ({{ $value | humanize }}/s).\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: MimirIngesterTsdbHeadTruncationFailed
       expr: 'rate(cortex_ingester_tsdb_head_truncations_failed_total[5m]) > 0'
@@ -193,7 +194,7 @@ groups:
         severity: critical
       annotations:
         summary: Mimir ingester TSDB head truncation failed (instance {{ $labels.instance }})
-        description: "Mimir ingester {{ $labels.instance }} is failing to truncate TSDB head.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+        description: "Mimir ingester {{ $labels.instance }} is failing to truncate TSDB head ({{ $value | humanize }}/s).\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: MimirIngesterTsdbCheckpointCreationFailed
       expr: 'rate(cortex_ingester_tsdb_checkpoint_creations_failed_total[5m]) > 0'
@@ -202,7 +203,7 @@ groups:
         severity: critical
       annotations:
         summary: Mimir ingester TSDB checkpoint creation failed (instance {{ $labels.instance }})
-        description: "Mimir ingester {{ $labels.instance }} is failing to create TSDB checkpoints.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+        description: "Mimir ingester {{ $labels.instance }} is failing to create TSDB checkpoints ({{ $value | humanize }}/s).\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: MimirIngesterTsdbCheckpointDeletionFailed
       expr: 'rate(cortex_ingester_tsdb_checkpoint_deletions_failed_total[5m]) > 0'
@@ -211,7 +212,7 @@ groups:
         severity: critical
       annotations:
         summary: Mimir ingester TSDB checkpoint deletion failed (instance {{ $labels.instance }})
-        description: "Mimir ingester {{ $labels.instance }} is failing to delete TSDB checkpoints.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+        description: "Mimir ingester {{ $labels.instance }} is failing to delete TSDB checkpoints ({{ $value | humanize }}/s).\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: MimirIngesterTsdbWalTruncationFailed
       expr: 'rate(cortex_ingester_tsdb_wal_truncations_failed_total[5m]) > 0'
@@ -220,7 +221,7 @@ groups:
         severity: warning
       annotations:
         summary: Mimir ingester TSDB WAL truncation failed (instance {{ $labels.instance }})
-        description: "Mimir ingester {{ $labels.instance }} is failing to truncate TSDB WAL.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+        description: "Mimir ingester {{ $labels.instance }} is failing to truncate TSDB WAL ({{ $value | humanize }}/s).\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: MimirIngesterTsdbWalWritesFailed
       expr: 'rate(cortex_ingester_tsdb_wal_writes_failed_total[1m]) > 0'
@@ -229,7 +230,7 @@ groups:
         severity: critical
       annotations:
         summary: Mimir ingester TSDB WAL writes failed (instance {{ $labels.instance }})
-        description: "Mimir ingester {{ $labels.instance }} is failing to write to TSDB WAL.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+        description: "Mimir ingester {{ $labels.instance }} is failing to write to TSDB WAL ({{ $value | humanize }}/s).\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     # Threshold aligned with official Mimir mixin (30 minutes).
     - alert: MimirStoreGatewayHasNotSyncedBucket
@@ -284,7 +285,7 @@ groups:
         severity: critical
       annotations:
         summary: Mimir compactor has consecutive failures (instance {{ $labels.instance }})
-        description: "Mimir compactor {{ $labels.instance }} has had 2+ compaction failures in the last 2 hours.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+        description: "Mimir compactor {{ $labels.instance }} has had {{ $value }} compaction failures in the last 2 hours.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: MimirCompactorHasRunOutOfDiskSpace
       expr: 'increase(cortex_compactor_disk_out_of_space_errors_total[24h]) >= 1'
@@ -312,7 +313,7 @@ groups:
         severity: warning
       annotations:
         summary: Mimir compactor skipped blocks (instance {{ $labels.instance }})
-        description: "Mimir compactor has found blocks that cannot be compacted (reason {{ $labels.reason }}).\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+        description: "Mimir compactor has found {{ $value }} blocks that cannot be compacted (reason {{ $labels.reason }}).\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: MimirRulerTooManyFailedPushes
       expr: '100 * sum by (instance, job) (rate(cortex_ruler_write_requests_failed_total[5m])) / sum by (instance, job) (rate(cortex_ruler_write_requests_total[5m])) > 1 and sum by (instance, job) (rate(cortex_ruler_write_requests_total[5m])) > 0'
@@ -341,14 +342,15 @@ groups:
         summary: Mimir ruler missed evaluations (instance {{ $labels.instance }})
         description: "Mimir ruler {{ $labels.instance }} is missing {{ printf \"%.2f\" $value }}% of rule group evaluations.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
+    # Threshold of 0.05/s avoids firing on transient single-event spikes.
     - alert: MimirRulerFailedRingCheck
-      expr: 'sum by (job) (rate(cortex_ruler_ring_check_errors_total[5m])) > 0'
+      expr: 'sum by (job) (rate(cortex_ruler_ring_check_errors_total[5m])) > 0.05'
       for: 5m
       labels:
         severity: critical
       annotations:
         summary: Mimir ruler failed ring check (instance {{ $labels.instance }})
-        description: "Mimir ruler {{ $labels.job }} is failing ring checks.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+        description: "Mimir ruler {{ $labels.job }} is failing ring checks ({{ $value | humanize }}/s).\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: MimirAlertmanagerSyncConfigsFailing
       expr: 'rate(cortex_alertmanager_sync_configs_failed_total[5m]) > 0'
@@ -357,7 +359,7 @@ groups:
         severity: critical
       annotations:
         summary: Mimir alertmanager sync configs failing (instance {{ $labels.instance }})
-        description: "Mimir alertmanager {{ $labels.job }} is failing to sync configs.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+        description: "Mimir alertmanager {{ $labels.job }} is failing to sync configs ({{ $value | humanize }}/s).\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: MimirAlertmanagerRingCheckFailing
       expr: 'rate(cortex_alertmanager_ring_check_errors_total[5m]) > 0'
@@ -366,7 +368,7 @@ groups:
         severity: critical
       annotations:
         summary: Mimir alertmanager ring check failing (instance {{ $labels.instance }})
-        description: "Mimir alertmanager {{ $labels.job }} is failing ring checks.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+        description: "Mimir alertmanager {{ $labels.job }} is failing ring checks ({{ $value | humanize }}/s).\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: MimirAlertmanagerStateMergeFailing
       expr: 'rate(cortex_alertmanager_partial_state_merges_failed_total[5m]) > 0'
@@ -375,7 +377,7 @@ groups:
         severity: critical
       annotations:
         summary: Mimir alertmanager state merge failing (instance {{ $labels.instance }})
-        description: "Mimir alertmanager {{ $labels.job }} is failing to merge state updates.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+        description: "Mimir alertmanager {{ $labels.job }} is failing to merge state updates ({{ $value | humanize }}/s).\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: MimirAlertmanagerReplicationFailing
       expr: 'rate(cortex_alertmanager_state_replication_failed_total[5m]) > 0'
@@ -384,7 +386,7 @@ groups:
         severity: critical
       annotations:
         summary: Mimir alertmanager replication failing (instance {{ $labels.instance }})
-        description: "Mimir alertmanager {{ $labels.job }} is failing to replicate state.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+        description: "Mimir alertmanager {{ $labels.job }} is failing to replicate state ({{ $value | humanize }}/s).\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: MimirAlertmanagerPersistStateFailing
       expr: 'rate(cortex_alertmanager_state_persist_failed_total[15m]) > 0'
@@ -393,7 +395,7 @@ groups:
         severity: critical
       annotations:
         summary: Mimir alertmanager persist state failing (instance {{ $labels.instance }})
-        description: "Mimir alertmanager {{ $labels.job }} is failing to persist state.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+        description: "Mimir alertmanager {{ $labels.job }} is failing to persist state ({{ $value | humanize }}/s).\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: MimirAlertmanagerInitialSyncFailed
       expr: 'increase(cortex_alertmanager_state_initial_sync_completed_total{outcome="failed"}[1m]) > 0'

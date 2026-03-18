@@ -8,7 +8,7 @@ groups:
     # Queued connections indicate Puma workers are saturated.
     # Consider increasing puma['worker_processes'] or puma['max_threads'] in gitlab.rb.
     - alert: GitlabPumaHighQueuedConnections
-      expr: 'avg_over_time(puma_queued_connections[5m]) > 5'
+      expr: 'puma_queued_connections > 5'
       for: 5m
       labels:
         severity: warning
@@ -85,7 +85,7 @@ groups:
         severity: warning
       annotations:
         summary: GitLab Sidekiq high job completion time (instance {{ $labels.instance }})
-        description: "GitLab Sidekiq job average completion time on {{ $labels.instance }} is above 5 minutes.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+        description: "GitLab Sidekiq job p95 completion time on {{ $labels.instance }} is above 5 minutes ({{ $value | humanizeDuration }}).\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     # This metric requires the emit_sidekiq_histogram_metrics feature flag to be enabled.
     # High queue latency means jobs are stuck waiting. Check Sidekiq concurrency and queue sizes.

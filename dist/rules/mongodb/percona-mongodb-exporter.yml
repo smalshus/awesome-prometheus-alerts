@@ -25,13 +25,13 @@ groups:
         summary: Mongodb replica member unhealthy (instance {{ $labels.instance }})
         description: "MongoDB replica member is not healthy\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
-    - alert: MongodbReplicationLag
+    - alert: MongodbReplicationLag(percona)
       expr: '(mongodb_rs_members_optimeDate{member_state="PRIMARY"} - on (set) group_right mongodb_rs_members_optimeDate{member_state="SECONDARY"}) / 1000 > 10'
       for: 0m
       labels:
         severity: critical
       annotations:
-        summary: MongoDB replication lag (instance {{ $labels.instance }})
+        summary: MongoDB replication lag (Percona) (instance {{ $labels.instance }})
         description: "Mongodb replication lag is more than 10s\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     # This query mixes old (mongodb_mongod_*) and new (mongodb_rs_*) metric names. It requires the Percona exporter to run with --compatible-mode to expose both.
@@ -44,29 +44,29 @@ groups:
         summary: MongoDB replication headroom (instance {{ $labels.instance }})
         description: "MongoDB replication headroom is <= 0\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
-    - alert: MongodbNumberCursorsOpen
+    - alert: MongodbNumberCursorsOpen(percona)
       expr: 'mongodb_ss_metrics_cursor_open{csr_type="total"} > 10 * 1000'
       for: 2m
       labels:
         severity: warning
       annotations:
-        summary: MongoDB number cursors open (instance {{ $labels.instance }})
+        summary: MongoDB number cursors open (Percona) (instance {{ $labels.instance }})
         description: "Too many cursors opened by MongoDB for clients (> 10k)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
-    - alert: MongodbCursorsTimeouts
+    - alert: MongodbCursorsTimeouts(percona)
       expr: 'increase(mongodb_ss_metrics_cursor_timedOut[1m]) > 100'
       for: 2m
       labels:
         severity: warning
       annotations:
-        summary: MongoDB cursors timeouts (instance {{ $labels.instance }})
-        description: "Too many cursors are timing out\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+        summary: MongoDB cursors timeouts (Percona) (instance {{ $labels.instance }})
+        description: "Too many cursors are timing out ({{ $value }} in the last minute)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
-    - alert: MongodbTooManyConnections
+    - alert: MongodbTooManyConnections(percona)
       expr: 'mongodb_ss_connections{conn_type="current"} / (mongodb_ss_connections{conn_type="current"} + mongodb_ss_connections{conn_type="available"}) * 100 > 80 and (mongodb_ss_connections{conn_type="current"} + mongodb_ss_connections{conn_type="available"}) > 0'
       for: 2m
       labels:
         severity: warning
       annotations:
-        summary: MongoDB too many connections (instance {{ $labels.instance }})
+        summary: MongoDB too many connections (Percona) (instance {{ $labels.instance }})
         description: "Too many connections (> 80%)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"

@@ -43,13 +43,13 @@ groups:
         summary: RabbitMQ out of memory (instance {{ $labels.instance }})
         description: "Memory available for RabbitMQ is low (< 10%)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
-    - alert: RabbitmqTooManyConnections
+    - alert: RabbitmqInstanceTooManyConnections
       expr: 'rabbitmq_connectionsTotal > 1000'
       for: 2m
       labels:
         severity: warning
       annotations:
-        summary: RabbitMQ too many connections (instance {{ $labels.instance }})
+        summary: RabbitMQ instance too many connections (instance {{ $labels.instance }})
         description: "RabbitMQ instance has too many connections (> 1000)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     # Indicate the queue name in dedicated label.

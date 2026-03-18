@@ -21,7 +21,7 @@ groups:
         severity: warning
       annotations:
         summary: Host memory under memory pressure (instance {{ $labels.instance }})
-        description: "The node is under heavy memory pressure. High rate of loading memory pages from disk.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+        description: "The node is under heavy memory pressure. High rate of major page faults ({{ $value }}/s).\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     # You may want to increase the alert manager 'repeat_interval' for this type of alert to daily or weekly
     - alert: HostMemoryIsUnderutilized

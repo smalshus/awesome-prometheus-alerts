@@ -76,7 +76,7 @@ groups:
         severity: warning
       annotations:
         summary: Postgresql dead locks (instance {{ $labels.instance }})
-        description: "PostgreSQL has dead-locks\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+        description: "PostgreSQL has dead-locks ({{ $value }} in the last minute)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: PostgresqlHighRollbackRate
       expr: 'sum by (namespace,datname) ((rate(pg_stat_database_xact_rollback{datname!~"template.*|postgres",datid!="0"}[3m])) / ((rate(pg_stat_database_xact_rollback{datname!~"template.*|postgres",datid!="0"}[3m])) + (rate(pg_stat_database_xact_commit{datname!~"template.*|postgres",datid!="0"}[3m])))) > 0.02'

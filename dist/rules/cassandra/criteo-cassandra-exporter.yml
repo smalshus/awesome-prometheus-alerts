@@ -51,31 +51,31 @@ groups:
         summary: Cassandra node down (instance {{ $labels.instance }})
         description: "Cassandra node down\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
-    - alert: CassandraCommitlogPendingTasks
+    - alert: CassandraCommitlogPendingTasks(criteo)
       expr: 'cassandra_stats{name="org:apache:cassandra:metrics:commitlog:pendingtasks:value"} > 15'
       for: 2m
       labels:
         severity: warning
       annotations:
-        summary: Cassandra commitlog pending tasks (instance {{ $labels.instance }})
+        summary: Cassandra commitlog pending tasks (Criteo) (instance {{ $labels.instance }})
         description: "Unexpected number of Cassandra commitlog pending tasks\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
-    - alert: CassandraCompactionExecutorBlockedTasks
+    - alert: CassandraCompactionExecutorBlockedTasks(criteo)
       expr: 'cassandra_stats{name="org:apache:cassandra:metrics:threadpools:internal:compactionexecutor:currentlyblockedtasks:count"} > 0'
       for: 2m
       labels:
         severity: warning
       annotations:
-        summary: Cassandra compaction executor blocked tasks (instance {{ $labels.instance }})
+        summary: Cassandra compaction executor blocked tasks (Criteo) (instance {{ $labels.instance }})
         description: "Some Cassandra compaction executor tasks are blocked\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
-    - alert: CassandraFlushWriterBlockedTasks
+    - alert: CassandraFlushWriterBlockedTasks(criteo)
       expr: 'cassandra_stats{name="org:apache:cassandra:metrics:threadpools:internal:memtableflushwriter:currentlyblockedtasks:count"} > 0'
       for: 2m
       labels:
         severity: warning
       annotations:
-        summary: Cassandra flush writer blocked tasks (instance {{ $labels.instance }})
+        summary: Cassandra flush writer blocked tasks (Criteo) (instance {{ $labels.instance }})
         description: "Some Cassandra flush writer tasks are blocked\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: CassandraRepairPendingTasks
@@ -96,67 +96,67 @@ groups:
         summary: Cassandra repair blocked tasks (instance {{ $labels.instance }})
         description: "Some Cassandra repair tasks are blocked\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
-    - alert: CassandraConnectionTimeoutsTotal
+    - alert: CassandraConnectionTimeoutsTotal(criteo)
       expr: 'rate(cassandra_stats{name="org:apache:cassandra:metrics:connection:totaltimeouts:count"}[1m]) > 5'
       for: 2m
       labels:
         severity: critical
       annotations:
-        summary: Cassandra connection timeouts total (instance {{ $labels.instance }})
+        summary: Cassandra connection timeouts total (Criteo) (instance {{ $labels.instance }})
         description: "Some connection between nodes are ending in timeout\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
-    - alert: CassandraStorageExceptions
+    - alert: CassandraStorageExceptions(criteo)
       expr: 'changes(cassandra_stats{name="org:apache:cassandra:metrics:storage:exceptions:count"}[1m]) > 1'
       for: 0m
       labels:
         severity: critical
       annotations:
-        summary: Cassandra storage exceptions (instance {{ $labels.instance }})
+        summary: Cassandra storage exceptions (Criteo) (instance {{ $labels.instance }})
         description: "Something is going wrong with cassandra storage\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
-    - alert: CassandraTombstoneDump
+    - alert: CassandraTombstoneDump(criteo)
       expr: 'cassandra_stats{name="org:apache:cassandra:metrics:table:tombstonescannedhistogram:99thpercentile"} > 1000'
       for: 0m
       labels:
         severity: critical
       annotations:
-        summary: Cassandra tombstone dump (instance {{ $labels.instance }})
+        summary: Cassandra tombstone dump (Criteo) (instance {{ $labels.instance }})
         description: "Too much tombstones scanned in queries\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
-    - alert: CassandraClientRequestUnavailableWrite
+    - alert: CassandraClientRequestUnavailableWrite(criteo)
       expr: 'changes(cassandra_stats{name="org:apache:cassandra:metrics:clientrequest:write:unavailables:count"}[1m]) > 0'
       for: 0m
       labels:
         severity: critical
       annotations:
-        summary: Cassandra client request unavailable write (instance {{ $labels.instance }})
+        summary: Cassandra client request unavailable write (Criteo) (instance {{ $labels.instance }})
         description: "Write failures have occurred because too many nodes are unavailable\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
-    - alert: CassandraClientRequestUnavailableRead
+    - alert: CassandraClientRequestUnavailableRead(criteo)
       expr: 'changes(cassandra_stats{name="org:apache:cassandra:metrics:clientrequest:read:unavailables:count"}[1m]) > 0'
       for: 0m
       labels:
         severity: critical
       annotations:
-        summary: Cassandra client request unavailable read (instance {{ $labels.instance }})
+        summary: Cassandra client request unavailable read (Criteo) (instance {{ $labels.instance }})
         description: "Read failures have occurred because too many nodes are unavailable\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
-    - alert: CassandraClientRequestWriteFailure
+    - alert: CassandraClientRequestWriteFailure(criteo)
       expr: 'cassandra_stats{name="org:apache:cassandra:metrics:clientrequest:write:failures:oneminuterate"} > 0'
       for: 0m
       labels:
         severity: critical
       annotations:
-        summary: Cassandra client request write failure (instance {{ $labels.instance }})
+        summary: Cassandra client request write failure (Criteo) (instance {{ $labels.instance }})
         description: "A lot of write failures encountered. A write failure is a non-timeout exception encountered during a write request. Examine the reason map to find to the root cause. The most common cause for this type of error is when batch sizes are too large.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
-    - alert: CassandraClientRequestReadFailure
+    - alert: CassandraClientRequestReadFailure(criteo)
       expr: 'cassandra_stats{name="org:apache:cassandra:metrics:clientrequest:read:failures:oneminuterate"} > 0'
       for: 0m
       labels:
         severity: critical
       annotations:
-        summary: Cassandra client request read failure (instance {{ $labels.instance }})
+        summary: Cassandra client request read failure (Criteo) (instance {{ $labels.instance }})
         description: "A lot of read failures encountered. A read failure is a non-timeout exception encountered during a read request. Examine the reason map to find to the root cause. The most common cause for this type of error is when batch sizes are too large.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: CassandraCacheHitRateKeyCache

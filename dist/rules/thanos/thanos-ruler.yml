@@ -12,7 +12,7 @@ groups:
         severity: critical
       annotations:
         summary: Thanos Rule Queue Is Dropping Alerts (instance {{ $labels.instance }})
-        description: "Thanos Rule {{$labels.instance}} is failing to queue alerts.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+        description: "Thanos Rule {{$labels.instance}} is failing to queue alerts ({{ $value | humanize }}/s).\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: ThanosRuleSenderIsFailingAlerts
       expr: 'sum by (job, instance) (rate(thanos_alert_sender_alerts_dropped_total{job=~".*thanos-rule.*"}[5m])) > 0'
@@ -21,7 +21,7 @@ groups:
         severity: critical
       annotations:
         summary: Thanos Rule Sender Is Failing Alerts (instance {{ $labels.instance }})
-        description: "Thanos Rule {{$labels.instance}} is failing to send alerts to alertmanager.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+        description: "Thanos Rule {{$labels.instance}} is failing to send alerts to alertmanager ({{ $value | humanize }}/s).\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: ThanosRuleHighRuleEvaluationFailures
       expr: '(sum by (job, instance) (rate(prometheus_rule_evaluation_failures_total{job=~".*thanos-rule.*"}[5m])) / sum by (job, instance) (rate(prometheus_rule_evaluations_total{job=~".*thanos-rule.*"}[5m])) * 100 > 5) and sum by (job, instance) (rate(prometheus_rule_evaluations_total{job=~".*thanos-rule.*"}[5m])) > 0'
@@ -30,16 +30,17 @@ groups:
         severity: critical
       annotations:
         summary: Thanos Rule High Rule Evaluation Failures (instance {{ $labels.instance }})
-        description: "Thanos Rule {{$labels.instance}} is failing to evaluate rules.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+        description: "Thanos Rule {{$labels.instance}} is failing to evaluate {{$value | humanize}}% of rules.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
+    # Threshold of 0.05/s avoids firing on transient single-event spikes.
     - alert: ThanosRuleHighRuleEvaluationWarnings
-      expr: 'sum by (job, instance) (rate(thanos_rule_evaluation_with_warnings_total{job=~".*thanos-rule.*"}[5m])) > 0'
+      expr: 'sum by (job, instance) (rate(thanos_rule_evaluation_with_warnings_total{job=~".*thanos-rule.*"}[5m])) > 0.05'
       for: 15m
       labels:
         severity: info
       annotations:
         summary: Thanos Rule High Rule Evaluation Warnings (instance {{ $labels.instance }})
-        description: "Thanos Rule {{$labels.instance}} has high number of evaluation warnings.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+        description: "Thanos Rule {{$labels.instance}} has high number of evaluation warnings ({{ $value | humanize }}/s).\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: ThanosRuleRuleEvaluationLatencyHigh
       expr: '(sum by (job, instance, rule_group) (prometheus_rule_group_last_duration_seconds{job=~".*thanos-rule.*"}) > sum by (job, instance, rule_group) (prometheus_rule_group_interval_seconds{job=~".*thanos-rule.*"}))'

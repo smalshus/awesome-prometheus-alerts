@@ -49,7 +49,7 @@ groups:
         severity: warning
       annotations:
         summary: Systemd socket refused connections (instance {{ $labels.instance }})
-        description: "Systemd socket {{ $labels.name }} is refusing connections. (instance {{ $labels.instance }})\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+        description: "Systemd socket {{ $labels.name }} is refusing connections. ({{ $value }} refused in last 5m, instance {{ $labels.instance }})\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     # Threshold of 100 connections is arbitrary. Adjust to your workload.
     - alert: SystemdSocketHighConnections

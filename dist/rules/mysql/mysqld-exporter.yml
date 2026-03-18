@@ -78,7 +78,7 @@ groups:
         severity: warning
       annotations:
         summary: MySQL slow queries (instance {{ $labels.instance }})
-        description: "MySQL server mysql has some new slow query.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+        description: "MySQL server mysql has some new slow query ({{ $value }} in the last minute).\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: MysqlInnodbLogWaits
       expr: 'rate(mysql_global_status_innodb_log_waits[15m]) > 10'
@@ -87,7 +87,7 @@ groups:
         severity: warning
       annotations:
         summary: MySQL InnoDB log waits (instance {{ $labels.instance }})
-        description: "MySQL innodb log writes stalling\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+        description: "MySQL innodb log writes stalling ({{ $value }} waits/s)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: MysqlRestarted
       expr: 'mysql_global_status_uptime < 60'

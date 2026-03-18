@@ -117,7 +117,7 @@ groups:
         description: "ClickHouse is experiencing issues with ZooKeeper connections, which may affect cluster state and coordination.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: ClickhouseAuthenticationFailures
-      expr: 'increase(ClickHouseErrorMetric_AUTHENTICATION_FAILED[5m]) > 0'
+      expr: 'increase(ClickHouseErrorMetric_AUTHENTICATION_FAILED[5m]) > 3'
       for: 0m
       labels:
         severity: info
@@ -126,7 +126,7 @@ groups:
         description: "Authentication failures detected, indicating potential security issues or misconfiguration.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: ClickhouseAccessDeniedErrors
-      expr: 'increase(ClickHouseErrorMetric_RESOURCE_ACCESS_DENIED[5m]) > 0'
+      expr: 'increase(ClickHouseErrorMetric_RESOURCE_ACCESS_DENIED[5m]) > 3'
       for: 0m
       labels:
         severity: info

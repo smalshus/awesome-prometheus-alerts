@@ -42,13 +42,13 @@ groups:
         description: "More than 10% of downstream HTTP responses are 4xx on {{ $labels.instance }} ({{ $value | printf \"%.1f\" }}%)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: EnvoyDownstreamConnectionsOverflowing
-      expr: 'increase(envoy_listener_downstream_cx_overflow[5m]) > 0'
+      expr: 'increase(envoy_listener_downstream_cx_overflow[5m]) > 5'
       for: 0m
       labels:
         severity: warning
       annotations:
         summary: Envoy downstream connections overflowing (instance {{ $labels.instance }})
-        description: "Downstream connections are being rejected due to listener overflow on {{ $labels.instance }}\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+        description: "Downstream connections are being rejected due to listener overflow on {{ $labels.instance }} ({{ $value }} in the last 5m)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: EnvoyClusterMembershipEmpty
       expr: 'envoy_cluster_membership_healthy == 0'
@@ -75,10 +75,10 @@ groups:
         severity: warning
       annotations:
         summary: Envoy high cluster upstream connection failures (instance {{ $labels.instance }})
-        description: "High rate of upstream connection failures in cluster {{ $labels.envoy_cluster_name }} on {{ $labels.instance }}\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+        description: "High rate of upstream connection failures in cluster {{ $labels.envoy_cluster_name }} on {{ $labels.instance }} ({{ $value }} in the last 5m)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: EnvoyHighClusterUpstreamRequestTimeoutRate
-      expr: 'increase(envoy_cluster_upstream_rq_timeout[5m]) / increase(envoy_cluster_upstream_rq_completed[5m]) * 100 > 5 and increase(envoy_cluster_upstream_rq_completed[5m]) > 0'
+      expr: 'rate(envoy_cluster_upstream_rq_timeout[5m]) / rate(envoy_cluster_upstream_rq_completed[5m]) * 100 > 5 and rate(envoy_cluster_upstream_rq_completed[5m]) > 0'
       for: 5m
       labels:
         severity: warning
@@ -87,7 +87,7 @@ groups:
         description: "More than 5% of upstream requests are timing out in cluster {{ $labels.envoy_cluster_name }} on {{ $labels.instance }}\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: EnvoyHighClusterUpstream5xxErrorRate
-      expr: 'increase(envoy_cluster_upstream_rq_xx{envoy_response_code_class="5"}[5m]) / increase(envoy_cluster_upstream_rq_completed[5m]) * 100 > 5 and increase(envoy_cluster_upstream_rq_completed[5m]) > 0'
+      expr: 'rate(envoy_cluster_upstream_rq_xx{envoy_response_code_class="5"}[5m]) / rate(envoy_cluster_upstream_rq_completed[5m]) * 100 > 5 and rate(envoy_cluster_upstream_rq_completed[5m]) > 0'
       for: 1m
       labels:
         severity: critical
@@ -102,7 +102,7 @@ groups:
         severity: warning
       annotations:
         summary: Envoy cluster health check failures (instance {{ $labels.instance }})
-        description: "Health checks are consistently failing in cluster {{ $labels.envoy_cluster_name }} on {{ $labels.instance }}\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+        description: "Health checks are consistently failing in cluster {{ $labels.envoy_cluster_name }} on {{ $labels.instance }} ({{ $value }} in the last 5m)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: EnvoyClusterOutlierDetectionEjectionsActive
       expr: 'envoy_cluster_outlier_detection_ejections_active > 0'
@@ -114,22 +114,22 @@ groups:
         description: "There are active outlier detection ejections in cluster {{ $labels.envoy_cluster_name }} on {{ $labels.instance }}\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: EnvoyListenerSslConnectionErrors
-      expr: 'increase(envoy_listener_ssl_connection_error[5m]) > 0'
+      expr: 'increase(envoy_listener_ssl_connection_error[5m]) > 5'
       for: 0m
       labels:
         severity: warning
       annotations:
         summary: Envoy listener SSL connection errors (instance {{ $labels.instance }})
-        description: "Envoy listener is experiencing SSL/TLS connection errors on {{ $labels.instance }}\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+        description: "Envoy listener is experiencing SSL/TLS connection errors on {{ $labels.instance }} ({{ $value }} in the last 5m)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: EnvoyGlobalDownstreamConnectionsOverflowing
-      expr: 'increase(envoy_listener_downstream_global_cx_overflow[5m]) > 0'
+      expr: 'increase(envoy_listener_downstream_global_cx_overflow[5m]) > 5'
       for: 0m
       labels:
         severity: critical
       annotations:
         summary: Envoy global downstream connections overflowing (instance {{ $labels.instance }})
-        description: "Downstream connections are being rejected due to global connection limit on {{ $labels.instance }}\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+        description: "Downstream connections are being rejected due to global connection limit on {{ $labels.instance }} ({{ $value }} in the last 5m)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: EnvoySslCertificateExpiringSoon
       expr: 'envoy_server_days_until_first_cert_expiring < 7'
@@ -165,7 +165,7 @@ groups:
         severity: critical
       annotations:
         summary: Envoy no healthy upstream (instance {{ $labels.instance }})
-        description: "Upstream connection attempts failed because no healthy upstream was available in cluster {{ $labels.envoy_cluster_name }} on {{ $labels.instance }}\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+        description: "Upstream connection attempts failed because no healthy upstream was available in cluster {{ $labels.envoy_cluster_name }} on {{ $labels.instance }} ({{ $value }} in the last 5m)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: EnvoyHighDownstreamRequestTimeoutRate
       expr: 'increase(envoy_http_downstream_rq_timeout[5m]) > 5'
@@ -174,4 +174,4 @@ groups:
         severity: warning
       annotations:
         summary: Envoy high downstream request timeout rate (instance {{ $labels.instance }})
-        description: "Downstream requests are timing out on {{ $labels.instance }}\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+        description: "Downstream requests are timing out on {{ $labels.instance }} ({{ $value }} in the last 5m)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"

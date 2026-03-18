@@ -95,4 +95,4 @@ groups:
         severity: warning
       annotations:
         summary: RabbitMQ unroutable messages (instance {{ $labels.instance }})
-        description: "A queue has unroutable messages\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+        description: "A queue has unroutable messages ({{ $value }} in the last 1m)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"

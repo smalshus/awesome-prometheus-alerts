@@ -30,26 +30,26 @@ groups:
         severity: warning
       annotations:
         summary: Etcd high number of leader changes (instance {{ $labels.instance }})
-        description: "Etcd leader changed more than 2 times during 10 minutes\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+        description: "Etcd leader changed {{ $value }} times during 10 minutes\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     # Filters to actual error codes. grpc_code!="OK" includes benign codes like NotFound, AlreadyExists, and Cancelled.
-    - alert: EtcdHighNumberOfFailedGrpcRequests
+    - alert: EtcdHighNumberOfFailedGrpcRequestsWarning
       expr: 'sum(rate(grpc_server_handled_total{grpc_code=~"Internal|Unavailable|DeadlineExceeded|ResourceExhausted|Aborted|Unknown"}[1m])) BY (grpc_service, grpc_method) / sum(rate(grpc_server_handled_total[1m])) BY (grpc_service, grpc_method) > 0.01 and sum(rate(grpc_server_handled_total[1m])) BY (grpc_service, grpc_method) > 0'
       for: 2m
       labels:
         severity: warning
       annotations:
-        summary: Etcd high number of failed GRPC requests (instance {{ $labels.instance }})
+        summary: Etcd high number of failed GRPC requests warning (instance {{ $labels.instance }})
         description: "More than 1% GRPC request failure detected in Etcd\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     # Filters to actual error codes. grpc_code!="OK" includes benign codes like NotFound, AlreadyExists, and Cancelled.
-    - alert: EtcdHighNumberOfFailedGrpcRequests
+    - alert: EtcdHighNumberOfFailedGrpcRequestsCritical
       expr: 'sum(rate(grpc_server_handled_total{grpc_code=~"Internal|Unavailable|DeadlineExceeded|ResourceExhausted|Aborted|Unknown"}[1m])) BY (grpc_service, grpc_method) / sum(rate(grpc_server_handled_total[1m])) BY (grpc_service, grpc_method) > 0.05 and sum(rate(grpc_server_handled_total[1m])) BY (grpc_service, grpc_method) > 0'
       for: 2m
       labels:
         severity: critical
       annotations:
-        summary: Etcd high number of failed GRPC requests (instance {{ $labels.instance }})
+        summary: Etcd high number of failed GRPC requests critical (instance {{ $labels.instance }})
         description: "More than 5% GRPC request failure detected in Etcd\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: EtcdGrpcRequestsSlow
@@ -61,22 +61,22 @@ groups:
         summary: Etcd GRPC requests slow (instance {{ $labels.instance }})
         description: "GRPC requests slowing down, 99th percentile is over 0.15s\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
-    - alert: EtcdHighNumberOfFailedHttpRequests
+    - alert: EtcdHighNumberOfFailedHttpRequestsWarning
       expr: 'sum(rate(etcd_http_failed_total[1m])) BY (method) / sum(rate(etcd_http_received_total[1m])) BY (method) > 0.01 and sum(rate(etcd_http_received_total[1m])) BY (method) > 0'
       for: 2m
       labels:
         severity: warning
       annotations:
-        summary: Etcd high number of failed HTTP requests (instance {{ $labels.instance }})
+        summary: Etcd high number of failed HTTP requests warning (instance {{ $labels.instance }})
         description: "More than 1% HTTP failure detected in Etcd\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
-    - alert: EtcdHighNumberOfFailedHttpRequests
+    - alert: EtcdHighNumberOfFailedHttpRequestsCritical
       expr: 'sum(rate(etcd_http_failed_total[1m])) BY (method) / sum(rate(etcd_http_received_total[1m])) BY (method) > 0.05 and sum(rate(etcd_http_received_total[1m])) BY (method) > 0'
       for: 2m
       labels:
         severity: critical
       annotations:
-        summary: Etcd high number of failed HTTP requests (instance {{ $labels.instance }})
+        summary: Etcd high number of failed HTTP requests critical (instance {{ $labels.instance }})
         description: "More than 5% HTTP failure detected in Etcd\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: EtcdHttpRequestsSlow
@@ -104,7 +104,7 @@ groups:
         severity: warning
       annotations:
         summary: Etcd high number of failed proposals (instance {{ $labels.instance }})
-        description: "Etcd server got more than 5 failed proposals past hour\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+        description: "Etcd server got {{ $value }} failed proposals in the past hour\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: EtcdHighFsyncDurations
       expr: 'histogram_quantile(0.99, rate(etcd_disk_wal_fsync_duration_seconds_bucket[1m])) > 0.5'
