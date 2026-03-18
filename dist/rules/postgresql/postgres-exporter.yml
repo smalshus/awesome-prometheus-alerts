@@ -115,7 +115,7 @@ groups:
         description: "Unused Replication Slots\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: PostgresqlTooManyDeadTuples
-      expr: '((pg_stat_user_tables_n_dead_tup > 10000) / (pg_stat_user_tables_n_live_tup + pg_stat_user_tables_n_dead_tup)) >= 0.1'
+      expr: '((pg_stat_user_tables_n_dead_tup > 10000) / (pg_stat_user_tables_n_live_tup + pg_stat_user_tables_n_dead_tup)) >= 0.1 and (pg_stat_user_tables_n_live_tup + pg_stat_user_tables_n_dead_tup) > 0'
       for: 2m
       labels:
         severity: warning
@@ -142,7 +142,7 @@ groups:
         description: "Database allows connections with SSL compression enabled. This may add significant jitter in replication delay. Replicas should turn off SSL compression via `sslcompression=0` in `recovery.conf`.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: PostgresqlTooManyLocksAcquired
-      expr: '((sum by (instance) (pg_locks_count)) / (pg_settings_max_locks_per_transaction * pg_settings_max_connections)) > 0.20'
+      expr: '((sum by (instance) (pg_locks_count)) / (pg_settings_max_locks_per_transaction * pg_settings_max_connections)) > 0.20 and (pg_settings_max_locks_per_transaction * pg_settings_max_connections) > 0'
       for: 2m
       labels:
         severity: critical

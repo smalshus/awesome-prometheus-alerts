@@ -16,7 +16,7 @@ groups:
         description: "Mimir has {{ $value }} unhealthy ingester(s) in the ring.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: MimirRequestErrors
-      expr: '100 * sum by (job, route) (rate(cortex_request_duration_seconds_count{status_code=~"5..", route!~"ready|debug_pprof"}[5m])) / sum by (job, route) (rate(cortex_request_duration_seconds_count{route!~"ready|debug_pprof"}[5m])) > 1'
+      expr: '100 * sum by (job, route) (rate(cortex_request_duration_seconds_count{status_code=~"5..", route!~"ready|debug_pprof"}[5m])) / sum by (job, route) (rate(cortex_request_duration_seconds_count{route!~"ready|debug_pprof"}[5m])) > 1 and sum by (job, route) (rate(cortex_request_duration_seconds_count{route!~"ready|debug_pprof"}[5m])) > 0'
       for: 15m
       labels:
         severity: critical
@@ -52,7 +52,7 @@ groups:
         description: "There are {{ $value }} queued up queries in {{ $labels.job }}.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: MimirCacheRequestErrors
-      expr: '(sum by (name, operation, job) (rate(thanos_cache_operation_failures_total[5m])) / sum by (name, operation, job) (rate(thanos_cache_operations_total[5m]))) * 100 > 5'
+      expr: '(sum by (name, operation, job) (rate(thanos_cache_operation_failures_total[5m])) / sum by (name, operation, job) (rate(thanos_cache_operations_total[5m]))) * 100 > 5 and sum by (name, operation, job) (rate(thanos_cache_operations_total[5m])) > 0'
       for: 5m
       labels:
         severity: warning
@@ -61,7 +61,7 @@ groups:
         description: "Mimir cache {{ $labels.name }} is experiencing {{ printf \"%.2f\" $value }}% errors for {{ $labels.operation }} operation.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: MimirKvStoreFailure
-      expr: '(sum by (job, kv_name) (rate(cortex_kv_request_duration_seconds_count{status_code!~"2.."}[5m])) / sum by (job, kv_name) (rate(cortex_kv_request_duration_seconds_count[5m]))) == 1'
+      expr: '(sum by (job, kv_name) (rate(cortex_kv_request_duration_seconds_count{status_code!~"2.."}[5m])) / sum by (job, kv_name) (rate(cortex_kv_request_duration_seconds_count[5m]))) == 1 and sum by (job, kv_name) (rate(cortex_kv_request_duration_seconds_count[5m])) > 0'
       for: 5m
       labels:
         severity: critical
@@ -70,7 +70,7 @@ groups:
         description: "Mimir {{ $labels.job }} KV store {{ $labels.kv_name }} is failing with 100% error rate.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: MimirMemoryMapAreasTooHigh
-      expr: 'process_memory_map_areas{job=~".*(ingester|cortex|mimir|store-gateway).*"} / process_memory_map_areas_limit{job=~".*(ingester|cortex|mimir|store-gateway).*"} * 100 > 80'
+      expr: 'process_memory_map_areas{job=~".*(ingester|cortex|mimir|store-gateway).*"} / process_memory_map_areas_limit{job=~".*(ingester|cortex|mimir|store-gateway).*"} * 100 > 80 and process_memory_map_areas_limit{job=~".*(ingester|cortex|mimir|store-gateway).*"} > 0'
       for: 5m
       labels:
         severity: critical
@@ -315,7 +315,7 @@ groups:
         description: "Mimir compactor has found blocks that cannot be compacted (reason {{ $labels.reason }}).\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: MimirRulerTooManyFailedPushes
-      expr: '100 * sum by (instance, job) (rate(cortex_ruler_write_requests_failed_total[5m])) / sum by (instance, job) (rate(cortex_ruler_write_requests_total[5m])) > 1'
+      expr: '100 * sum by (instance, job) (rate(cortex_ruler_write_requests_failed_total[5m])) / sum by (instance, job) (rate(cortex_ruler_write_requests_total[5m])) > 1 and sum by (instance, job) (rate(cortex_ruler_write_requests_total[5m])) > 0'
       for: 5m
       labels:
         severity: critical
@@ -324,7 +324,7 @@ groups:
         description: "Mimir ruler {{ $labels.instance }} is failing to push {{ printf \"%.2f\" $value }}% of write requests.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: MimirRulerTooManyFailedQueries
-      expr: '100 * sum by (instance, job) (rate(cortex_ruler_queries_failed_total[5m])) / sum by (instance, job) (rate(cortex_ruler_queries_total[5m])) > 1'
+      expr: '100 * sum by (instance, job) (rate(cortex_ruler_queries_failed_total[5m])) / sum by (instance, job) (rate(cortex_ruler_queries_total[5m])) > 1 and sum by (instance, job) (rate(cortex_ruler_queries_total[5m])) > 0'
       for: 5m
       labels:
         severity: critical
@@ -333,7 +333,7 @@ groups:
         description: "Mimir ruler {{ $labels.instance }} is failing {{ printf \"%.2f\" $value }}% of query evaluations.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: MimirRulerMissedEvaluations
-      expr: '100 * sum by (instance, job) (rate(cortex_prometheus_rule_group_iterations_missed_total[5m])) / sum by (instance, job) (rate(cortex_prometheus_rule_group_iterations_total[5m])) > 1'
+      expr: '100 * sum by (instance, job) (rate(cortex_prometheus_rule_group_iterations_missed_total[5m])) / sum by (instance, job) (rate(cortex_prometheus_rule_group_iterations_total[5m])) > 1 and sum by (instance, job) (rate(cortex_prometheus_rule_group_iterations_total[5m])) > 0'
       for: 5m
       labels:
         severity: warning

@@ -141,7 +141,7 @@ groups:
         description: "Replication changes feed has failed reads more than 5 times in 5 minutes\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: CouchdbFileDescriptorsHigh
-      expr: 'process_open_fds / process_max_fds > 0.85'
+      expr: 'process_open_fds / process_max_fds > 0.85 and process_max_fds > 0'
       for: 5m
       labels:
         severity: warning

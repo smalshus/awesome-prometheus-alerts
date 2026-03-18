@@ -15,7 +15,7 @@ groups:
         description: "Envoy server is not live (draining or shutting down) on {{ $labels.instance }}\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: EnvoyHighMemoryUsage
-      expr: 'envoy_server_memory_allocated / envoy_server_memory_heap_size * 100 > 90'
+      expr: 'envoy_server_memory_allocated / envoy_server_memory_heap_size * 100 > 90 and envoy_server_memory_heap_size > 0'
       for: 5m
       labels:
         severity: warning

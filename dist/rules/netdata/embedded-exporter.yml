@@ -5,8 +5,9 @@ groups:
   
   rules:
 
+    # This is a gauge metric (not a counter). Checking idle < 20% means CPU usage > 80%.
     - alert: NetdataHighCpuUsage
-      expr: 'rate(netdata_cpu_cpu_percentage_average{dimension="idle"}[1m]) > 80'
+      expr: 'netdata_cpu_cpu_percentage_average{dimension="idle"} < 20'
       for: 5m
       labels:
         severity: warning
@@ -15,7 +16,7 @@ groups:
         description: "Netdata high CPU usage (> 80%)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: HostCpuStealNoisyNeighbor
-      expr: 'rate(netdata_cpu_cpu_percentage_average{dimension="steal"}[1m]) > 10'
+      expr: 'netdata_cpu_cpu_percentage_average{dimension="steal"} > 10'
       for: 5m
       labels:
         severity: warning
@@ -24,7 +25,7 @@ groups:
         description: "CPU steal is > 10%. A noisy neighbor is killing VM performances or a spot instance may be out of credit.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: NetdataHighMemoryUsage
-      expr: '100 / netdata_system_ram_MiB_average * netdata_system_ram_MiB_average{dimension=~"free|cached"} < 20'
+      expr: '100 / netdata_system_ram_MiB_average * netdata_system_ram_MiB_average{dimension=~"free|cached"} < 20 and netdata_system_ram_MiB_average > 0'
       for: 5m
       labels:
         severity: warning
@@ -33,7 +34,7 @@ groups:
         description: "Netdata high memory usage (> 80%)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: NetdataLowDiskSpace
-      expr: '100 / netdata_disk_space_GB_average * netdata_disk_space_GB_average{dimension=~"avail|cached"} < 20'
+      expr: '100 / netdata_disk_space_GB_average * netdata_disk_space_GB_average{dimension=~"avail|cached"} < 20 and netdata_disk_space_GB_average > 0'
       for: 5m
       labels:
         severity: warning

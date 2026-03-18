@@ -34,7 +34,7 @@ groups:
         description: "Systemd service {{ $labels.name }} has restarted {{ $value }} times in the last hour. (instance {{ $labels.instance }})\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: SystemdUnitTasksNearLimit
-      expr: 'systemd_unit_tasks_current / ignoring(type) systemd_unit_tasks_max > 0.9 and systemd_unit_tasks_max > 0'
+      expr: 'systemd_unit_tasks_current / ignoring(type) systemd_unit_tasks_max > 0.9 and ignoring(type) systemd_unit_tasks_max > 0'
       for: 5m
       labels:
         severity: warning

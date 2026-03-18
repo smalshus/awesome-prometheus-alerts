@@ -32,8 +32,9 @@ groups:
         summary: Etcd high number of leader changes (instance {{ $labels.instance }})
         description: "Etcd leader changed more than 2 times during 10 minutes\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
+    # Filters to actual error codes. grpc_code!="OK" includes benign codes like NotFound, AlreadyExists, and Cancelled.
     - alert: EtcdHighNumberOfFailedGrpcRequests
-      expr: 'sum(rate(grpc_server_handled_total{grpc_code!="OK"}[1m])) BY (grpc_service, grpc_method) / sum(rate(grpc_server_handled_total[1m])) BY (grpc_service, grpc_method) > 0.01'
+      expr: 'sum(rate(grpc_server_handled_total{grpc_code=~"Internal|Unavailable|DeadlineExceeded|ResourceExhausted|Aborted|Unknown"}[1m])) BY (grpc_service, grpc_method) / sum(rate(grpc_server_handled_total[1m])) BY (grpc_service, grpc_method) > 0.01 and sum(rate(grpc_server_handled_total[1m])) BY (grpc_service, grpc_method) > 0'
       for: 2m
       labels:
         severity: warning
@@ -41,8 +42,9 @@ groups:
         summary: Etcd high number of failed GRPC requests (instance {{ $labels.instance }})
         description: "More than 1% GRPC request failure detected in Etcd\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
+    # Filters to actual error codes. grpc_code!="OK" includes benign codes like NotFound, AlreadyExists, and Cancelled.
     - alert: EtcdHighNumberOfFailedGrpcRequests
-      expr: 'sum(rate(grpc_server_handled_total{grpc_code!="OK"}[1m])) BY (grpc_service, grpc_method) / sum(rate(grpc_server_handled_total[1m])) BY (grpc_service, grpc_method) > 0.05'
+      expr: 'sum(rate(grpc_server_handled_total{grpc_code=~"Internal|Unavailable|DeadlineExceeded|ResourceExhausted|Aborted|Unknown"}[1m])) BY (grpc_service, grpc_method) / sum(rate(grpc_server_handled_total[1m])) BY (grpc_service, grpc_method) > 0.05 and sum(rate(grpc_server_handled_total[1m])) BY (grpc_service, grpc_method) > 0'
       for: 2m
       labels:
         severity: critical
@@ -60,7 +62,7 @@ groups:
         description: "GRPC requests slowing down, 99th percentile is over 0.15s\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: EtcdHighNumberOfFailedHttpRequests
-      expr: 'sum(rate(etcd_http_failed_total[1m])) BY (method) / sum(rate(etcd_http_received_total[1m])) BY (method) > 0.01'
+      expr: 'sum(rate(etcd_http_failed_total[1m])) BY (method) / sum(rate(etcd_http_received_total[1m])) BY (method) > 0.01 and sum(rate(etcd_http_received_total[1m])) BY (method) > 0'
       for: 2m
       labels:
         severity: warning
@@ -69,7 +71,7 @@ groups:
         description: "More than 1% HTTP failure detected in Etcd\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: EtcdHighNumberOfFailedHttpRequests
-      expr: 'sum(rate(etcd_http_failed_total[1m])) BY (method) / sum(rate(etcd_http_received_total[1m])) BY (method) > 0.05'
+      expr: 'sum(rate(etcd_http_failed_total[1m])) BY (method) / sum(rate(etcd_http_received_total[1m])) BY (method) > 0.05 and sum(rate(etcd_http_received_total[1m])) BY (method) > 0'
       for: 2m
       labels:
         severity: critical

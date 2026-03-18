@@ -88,7 +88,7 @@ groups:
 
     # Fires when more than 80% of the account's droplet limit is in use.
     - alert: DigitaloceanDropletLimitApproaching
-      expr: '(count(digitalocean_droplet_up) / digitalocean_account_droplet_limit) * 100 > 80'
+      expr: '(count(digitalocean_droplet_up) / digitalocean_account_droplet_limit) * 100 > 80 and digitalocean_account_droplet_limit > 0'
       for: 0m
       labels:
         severity: warning

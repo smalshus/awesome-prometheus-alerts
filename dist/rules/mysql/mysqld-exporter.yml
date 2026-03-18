@@ -16,7 +16,7 @@ groups:
         description: "MySQL instance is down on {{ $labels.instance }}\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: MysqlTooManyConnections(>80%)
-      expr: 'max_over_time(mysql_global_status_threads_connected[1m]) / mysql_global_variables_max_connections * 100 > 80'
+      expr: 'max_over_time(mysql_global_status_threads_connected[1m]) / mysql_global_variables_max_connections * 100 > 80 and mysql_global_variables_max_connections > 0'
       for: 2m
       labels:
         severity: warning
@@ -25,7 +25,7 @@ groups:
         description: "More than 80% of MySQL connections are in use on {{ $labels.instance }}\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: MysqlHighPreparedStatementsUtilization(>80%)
-      expr: 'max_over_time(mysql_global_status_prepared_stmt_count[1m]) / mysql_global_variables_max_prepared_stmt_count * 100 > 80'
+      expr: 'max_over_time(mysql_global_status_prepared_stmt_count[1m]) / mysql_global_variables_max_prepared_stmt_count * 100 > 80 and mysql_global_variables_max_prepared_stmt_count > 0'
       for: 2m
       labels:
         severity: warning
@@ -34,7 +34,7 @@ groups:
         description: "High utilization of prepared statements (>80%) on {{ $labels.instance }}\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: MysqlHighThreadsRunning
-      expr: 'max_over_time(mysql_global_status_threads_running[1m]) / mysql_global_variables_max_connections * 100 > 60'
+      expr: 'max_over_time(mysql_global_status_threads_running[1m]) / mysql_global_variables_max_connections * 100 > 60 and mysql_global_variables_max_connections > 0'
       for: 2m
       labels:
         severity: warning
@@ -108,7 +108,7 @@ groups:
         description: "MySQL is being overload with unusual QPS (> 10k QPS).\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: MysqlTooManyOpenFiles
-      expr: 'mysql_global_status_innodb_num_open_files / mysql_global_variables_open_files_limit * 100 > 75'
+      expr: 'mysql_global_status_innodb_num_open_files / mysql_global_variables_open_files_limit * 100 > 75 and mysql_global_variables_open_files_limit > 0'
       for: 2m
       labels:
         severity: warning

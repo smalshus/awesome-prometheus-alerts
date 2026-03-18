@@ -6,7 +6,7 @@ groups:
   rules:
 
     - alert: JvmMemoryFillingUp
-      expr: '(sum by (instance)(jvm_memory_used_bytes{area="heap"}) / sum by (instance)(jvm_memory_max_bytes{area="heap"})) * 100 > 80'
+      expr: '(sum by (instance)(jvm_memory_used_bytes{area="heap"}) / sum by (instance)(jvm_memory_max_bytes{area="heap"})) * 100 > 80 and sum by (instance)(jvm_memory_max_bytes{area="heap"}) > 0'
       for: 2m
       labels:
         severity: warning
@@ -73,7 +73,7 @@ groups:
         description: "Frequent old/major GC cycles, indicating memory pressure\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: JvmDirectBufferPoolFillingUp
-      expr: '(jvm_buffer_pool_used_bytes / jvm_buffer_pool_capacity_bytes) * 100 > 90'
+      expr: '(jvm_buffer_pool_used_bytes / jvm_buffer_pool_capacity_bytes) * 100 > 90 and jvm_buffer_pool_capacity_bytes > 0'
       for: 5m
       labels:
         severity: warning
@@ -93,7 +93,7 @@ groups:
     # process_open_fds and process_max_fds are generic metrics from the Prometheus client library, not JVM-specific.
     # This alert will also fire for Go, Python, or any process exposing these metrics.
     - alert: JvmFileDescriptorsExhaustion
-      expr: '(process_open_fds / process_max_fds) * 100 > 90'
+      expr: '(process_open_fds / process_max_fds) * 100 > 90 and process_max_fds > 0'
       for: 5m
       labels:
         severity: warning

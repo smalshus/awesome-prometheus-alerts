@@ -25,7 +25,7 @@ groups:
 
     # process_open_fds and process_max_fds are generic metrics from the Prometheus client library, not Python-specific.
     - alert: PythonFileDescriptorsExhaustion
-      expr: '(process_open_fds / process_max_fds) * 100 > 90'
+      expr: '(process_open_fds / process_max_fds) * 100 > 90 and process_max_fds > 0'
       for: 5m
       labels:
         severity: warning

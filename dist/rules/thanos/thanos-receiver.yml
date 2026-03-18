@@ -6,7 +6,7 @@ groups:
   rules:
 
     - alert: ThanosReceiveHttpRequestErrorRateHigh
-      expr: '(sum by (job) (rate(http_requests_total{code=~"5..", job=~".*thanos-receive.*", handler="receive"}[5m]))/  sum by (job) (rate(http_requests_total{job=~".*thanos-receive.*", handler="receive"}[5m]))) * 100 > 5'
+      expr: '(sum by (job) (rate(http_requests_total{code=~"5..", job=~".*thanos-receive.*", handler="receive"}[5m]))/  sum by (job) (rate(http_requests_total{job=~".*thanos-receive.*", handler="receive"}[5m]))) * 100 > 5 and sum by (job) (rate(http_requests_total{job=~".*thanos-receive.*", handler="receive"}[5m])) > 0'
       for: 5m
       labels:
         severity: critical
@@ -33,7 +33,7 @@ groups:
         description: "Thanos Receive {{$labels.job}} is failing to replicate {{$value | humanize}}% of requests.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: ThanosReceiveHighForwardRequestFailures
-      expr: '(sum by (job) (rate(thanos_receive_forward_requests_total{result="error", job=~".*thanos-receive.*"}[5m]))/  sum by (job) (rate(thanos_receive_forward_requests_total{job=~".*thanos-receive.*"}[5m]))) * 100 > 20'
+      expr: '(sum by (job) (rate(thanos_receive_forward_requests_total{result="error", job=~".*thanos-receive.*"}[5m]))/  sum by (job) (rate(thanos_receive_forward_requests_total{job=~".*thanos-receive.*"}[5m]))) * 100 > 20 and sum by (job) (rate(thanos_receive_forward_requests_total{job=~".*thanos-receive.*"}[5m])) > 0'
       for: 5m
       labels:
         severity: info
@@ -42,7 +42,7 @@ groups:
         description: "Thanos Receive {{$labels.job}} is failing to forward {{$value | humanize}}% of requests.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: ThanosReceiveHighHashringFileRefreshFailures
-      expr: '(sum by (job) (rate(thanos_receive_hashrings_file_errors_total{job=~".*thanos-receive.*"}[5m])) / sum by (job) (rate(thanos_receive_hashrings_file_refreshes_total{job=~".*thanos-receive.*"}[5m])) > 0)'
+      expr: '(sum by (job) (rate(thanos_receive_hashrings_file_errors_total{job=~".*thanos-receive.*"}[5m])) / sum by (job) (rate(thanos_receive_hashrings_file_refreshes_total{job=~".*thanos-receive.*"}[5m])) > 0) and sum by (job) (rate(thanos_receive_hashrings_file_refreshes_total{job=~".*thanos-receive.*"}[5m])) > 0'
       for: 15m
       labels:
         severity: warning

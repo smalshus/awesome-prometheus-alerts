@@ -34,7 +34,7 @@ groups:
         description: "Memory usage is over 80%.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: ClickhouseDiskSpaceLowOnDefault
-      expr: 'ClickHouseAsyncMetrics_DiskAvailable_default / (ClickHouseAsyncMetrics_DiskAvailable_default + ClickHouseAsyncMetrics_DiskUsed_default) * 100 < 20'
+      expr: 'ClickHouseAsyncMetrics_DiskAvailable_default / (ClickHouseAsyncMetrics_DiskAvailable_default + ClickHouseAsyncMetrics_DiskUsed_default) * 100 < 20 and (ClickHouseAsyncMetrics_DiskAvailable_default + ClickHouseAsyncMetrics_DiskUsed_default) > 0'
       for: 2m
       labels:
         severity: warning
@@ -43,7 +43,7 @@ groups:
         description: "Disk space on default is below 20%.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: ClickhouseDiskSpaceCriticalOnDefault
-      expr: 'ClickHouseAsyncMetrics_DiskAvailable_default / (ClickHouseAsyncMetrics_DiskAvailable_default + ClickHouseAsyncMetrics_DiskUsed_default) * 100 < 10'
+      expr: 'ClickHouseAsyncMetrics_DiskAvailable_default / (ClickHouseAsyncMetrics_DiskAvailable_default + ClickHouseAsyncMetrics_DiskUsed_default) * 100 < 10 and (ClickHouseAsyncMetrics_DiskAvailable_default + ClickHouseAsyncMetrics_DiskUsed_default) > 0'
       for: 2m
       labels:
         severity: critical
@@ -52,7 +52,7 @@ groups:
         description: "Disk space on default disk is critically low, below 10%.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: ClickhouseDiskSpaceLowOnBackups
-      expr: 'ClickHouseAsyncMetrics_DiskAvailable_backups / (ClickHouseAsyncMetrics_DiskAvailable_backups + ClickHouseAsyncMetrics_DiskUsed_backups) * 100 < 20'
+      expr: 'ClickHouseAsyncMetrics_DiskAvailable_backups / (ClickHouseAsyncMetrics_DiskAvailable_backups + ClickHouseAsyncMetrics_DiskUsed_backups) * 100 < 20 and (ClickHouseAsyncMetrics_DiskAvailable_backups + ClickHouseAsyncMetrics_DiskUsed_backups) > 0'
       for: 2m
       labels:
         severity: warning

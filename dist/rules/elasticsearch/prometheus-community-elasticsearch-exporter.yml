@@ -6,7 +6,7 @@ groups:
   rules:
 
     - alert: ElasticsearchHeapUsageTooHigh
-      expr: '(elasticsearch_jvm_memory_used_bytes{area="heap"} / elasticsearch_jvm_memory_max_bytes{area="heap"}) * 100 > 90'
+      expr: '(elasticsearch_jvm_memory_used_bytes{area="heap"} / elasticsearch_jvm_memory_max_bytes{area="heap"}) * 100 > 90 and elasticsearch_jvm_memory_max_bytes{area="heap"} > 0'
       for: 2m
       labels:
         severity: critical
@@ -15,7 +15,7 @@ groups:
         description: "The heap usage is over 90%\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: ElasticsearchHeapUsageWarning
-      expr: '(elasticsearch_jvm_memory_used_bytes{area="heap"} / elasticsearch_jvm_memory_max_bytes{area="heap"}) * 100 > 80'
+      expr: '(elasticsearch_jvm_memory_used_bytes{area="heap"} / elasticsearch_jvm_memory_max_bytes{area="heap"}) * 100 > 80 and elasticsearch_jvm_memory_max_bytes{area="heap"} > 0'
       for: 2m
       labels:
         severity: warning
@@ -24,7 +24,7 @@ groups:
         description: "The heap usage is over 80%\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: ElasticsearchDiskOutOfSpace
-      expr: 'elasticsearch_filesystem_data_available_bytes / elasticsearch_filesystem_data_size_bytes * 100 < 10'
+      expr: 'elasticsearch_filesystem_data_available_bytes / elasticsearch_filesystem_data_size_bytes * 100 < 10 and elasticsearch_filesystem_data_size_bytes > 0'
       for: 0m
       labels:
         severity: critical
@@ -33,7 +33,7 @@ groups:
         description: "The disk usage is over 90%\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: ElasticsearchDiskSpaceLow
-      expr: 'elasticsearch_filesystem_data_available_bytes / elasticsearch_filesystem_data_size_bytes * 100 < 20'
+      expr: 'elasticsearch_filesystem_data_available_bytes / elasticsearch_filesystem_data_size_bytes * 100 < 20 and elasticsearch_filesystem_data_size_bytes > 0'
       for: 2m
       labels:
         severity: warning

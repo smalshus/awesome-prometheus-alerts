@@ -6,7 +6,7 @@ groups:
   rules:
 
     - alert: Php-fpmMax-childrenReached
-      expr: 'sum(phpfpm_max_children_reached_total) by (instance) > 0'
+      expr: 'sum(increase(phpfpm_max_children_reached_total[5m])) by (instance) > 0'
       for: 0m
       labels:
         severity: warning

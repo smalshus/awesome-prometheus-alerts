@@ -15,7 +15,7 @@ groups:
         description: "HAProxy down\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: HaproxyHighHttp4xxErrorRateBackend
-      expr: 'sum by (backend) (rate(haproxy_server_http_responses_total{code="4xx"}[1m])) / sum by (backend) (rate(haproxy_server_http_responses_total[1m])) > 5'
+      expr: 'sum by (backend) (rate(haproxy_server_http_responses_total{code="4xx"}[1m])) / sum by (backend) (rate(haproxy_server_http_responses_total[1m])) > 5 and sum by (backend) (rate(haproxy_server_http_responses_total[1m])) > 0'
       for: 1m
       labels:
         severity: critical
@@ -24,7 +24,7 @@ groups:
         description: "Too many HTTP requests with status 4xx (> 5%) on backend {{ $labels.fqdn }}/{{ $labels.backend }}\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: HaproxyHighHttp5xxErrorRateBackend
-      expr: 'sum by (backend) (rate(haproxy_server_http_responses_total{code="5xx"}[1m])) / sum by (backend) (rate(haproxy_server_http_responses_total[1m])) > 5'
+      expr: 'sum by (backend) (rate(haproxy_server_http_responses_total{code="5xx"}[1m])) / sum by (backend) (rate(haproxy_server_http_responses_total[1m])) > 5 and sum by (backend) (rate(haproxy_server_http_responses_total[1m])) > 0'
       for: 1m
       labels:
         severity: critical
@@ -33,7 +33,7 @@ groups:
         description: "Too many HTTP requests with status 5xx (> 5%) on backend {{ $labels.fqdn }}/{{ $labels.backend }}\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: HaproxyHighHttp4xxErrorRateServer
-      expr: 'sum by (server) (rate(haproxy_server_http_responses_total{code="4xx"}[1m]) * 100) / sum by (server) (rate(haproxy_server_http_responses_total[1m])) > 5'
+      expr: 'sum by (server) (rate(haproxy_server_http_responses_total{code="4xx"}[1m]) * 100) / sum by (server) (rate(haproxy_server_http_responses_total[1m])) > 5 and sum by (server) (rate(haproxy_server_http_responses_total[1m])) > 0'
       for: 1m
       labels:
         severity: critical
@@ -42,7 +42,7 @@ groups:
         description: "Too many HTTP requests with status 4xx (> 5%) on server {{ $labels.server }}\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: HaproxyHighHttp5xxErrorRateServer
-      expr: 'sum by (server) (rate(haproxy_server_http_responses_total{code="5xx"}[1m]) * 100) / sum by (server) (rate(haproxy_server_http_responses_total[1m])) > 5'
+      expr: 'sum by (server) (rate(haproxy_server_http_responses_total{code="5xx"}[1m]) * 100) / sum by (server) (rate(haproxy_server_http_responses_total[1m])) > 5 and sum by (server) (rate(haproxy_server_http_responses_total[1m])) > 0'
       for: 1m
       labels:
         severity: critical
@@ -51,7 +51,7 @@ groups:
         description: "Too many HTTP requests with status 5xx (> 5%) on server {{ $labels.server }}\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: HaproxyServerResponseErrors
-      expr: 'sum by (server) (rate(haproxy_server_response_errors_total[1m]) * 100) / sum by (server) (rate(haproxy_server_http_responses_total[1m])) > 5'
+      expr: 'sum by (server) (rate(haproxy_server_response_errors_total[1m]) * 100) / sum by (server) (rate(haproxy_server_http_responses_total[1m])) > 5 and sum by (server) (rate(haproxy_server_http_responses_total[1m])) > 0'
       for: 1m
       labels:
         severity: critical
@@ -78,7 +78,7 @@ groups:
         description: "Too many connection errors to {{ $labels.server }} server (> 100 req/s). Request throughput may be too high.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: HaproxyBackendMaxActiveSession
-      expr: '((sum by (backend) (avg_over_time(haproxy_backend_current_sessions[2m]) * 100) / sum by (backend) (avg_over_time(haproxy_backend_limit_sessions[2m])))) > 80'
+      expr: '((sum by (backend) (avg_over_time(haproxy_backend_current_sessions[2m]) * 100) / sum by (backend) (avg_over_time(haproxy_backend_limit_sessions[2m])))) > 80 and sum by (backend) (avg_over_time(haproxy_backend_limit_sessions[2m])) > 0'
       for: 2m
       labels:
         severity: warning

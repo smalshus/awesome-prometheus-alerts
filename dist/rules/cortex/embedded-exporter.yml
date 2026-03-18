@@ -23,8 +23,9 @@ groups:
         summary: Cortex not connected to Alertmanager (instance {{ $labels.instance }})
         description: "Cortex not connected to Alertmanager (instance {{ $labels.instance }})\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
+    # Threshold of 0.05/s avoids firing on transient single-event spikes.
     - alert: CortexNotificationAreBeingDropped
-      expr: 'rate(cortex_prometheus_notifications_dropped_total[5m]) > 0'
+      expr: 'rate(cortex_prometheus_notifications_dropped_total[5m]) > 0.05'
       for: 0m
       labels:
         severity: critical
@@ -32,8 +33,9 @@ groups:
         summary: Cortex notification are being dropped (instance {{ $labels.instance }})
         description: "Cortex notification are being dropped due to errors (instance {{ $labels.instance }})\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
+    # Threshold of 0.05/s avoids firing on transient single-event spikes.
     - alert: CortexNotificationError
-      expr: 'rate(cortex_prometheus_notifications_errors_total[5m]) > 0'
+      expr: 'rate(cortex_prometheus_notifications_errors_total[5m]) > 0.05'
       for: 0m
       labels:
         severity: critical

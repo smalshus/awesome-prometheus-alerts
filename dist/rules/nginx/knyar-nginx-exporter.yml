@@ -6,7 +6,7 @@ groups:
   rules:
 
     - alert: NginxHighHttp4xxErrorRate
-      expr: 'sum(rate(nginx_http_requests_total{status=~"^4.."}[1m])) / sum(rate(nginx_http_requests_total[1m])) * 100 > 5'
+      expr: 'sum(rate(nginx_http_requests_total{status=~"^4.."}[1m])) / sum(rate(nginx_http_requests_total[1m])) * 100 > 5 and sum(rate(nginx_http_requests_total[1m])) > 0'
       for: 1m
       labels:
         severity: critical
@@ -15,7 +15,7 @@ groups:
         description: "Too many HTTP requests with status 4xx (> 5%)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: NginxHighHttp5xxErrorRate
-      expr: 'sum(rate(nginx_http_requests_total{status=~"^5.."}[1m])) / sum(rate(nginx_http_requests_total[1m])) * 100 > 5'
+      expr: 'sum(rate(nginx_http_requests_total{status=~"^5.."}[1m])) / sum(rate(nginx_http_requests_total[1m])) * 100 > 5 and sum(rate(nginx_http_requests_total[1m])) > 0'
       for: 1m
       labels:
         severity: critical

@@ -6,7 +6,7 @@ groups:
   rules:
 
     - alert: HaproxyHighHttp4xxErrorRateBackend
-      expr: '((sum by (proxy) (rate(haproxy_server_http_responses_total{code="4xx"}[1m])) / sum by (proxy) (rate(haproxy_server_http_responses_total[1m]))) * 100) > 5'
+      expr: '((sum by (proxy) (rate(haproxy_server_http_responses_total{code="4xx"}[1m])) / sum by (proxy) (rate(haproxy_server_http_responses_total[1m]))) * 100) > 5 and sum by (proxy) (rate(haproxy_server_http_responses_total[1m])) > 0'
       for: 1m
       labels:
         severity: critical
@@ -15,7 +15,7 @@ groups:
         description: "Too many HTTP requests with status 4xx (> 5%) on backend {{ $labels.fqdn }}/{{ $labels.backend }}\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: HaproxyHighHttp5xxErrorRateBackend
-      expr: '((sum by (proxy) (rate(haproxy_server_http_responses_total{code="5xx"}[1m])) / sum by (proxy) (rate(haproxy_server_http_responses_total[1m]))) * 100) > 5'
+      expr: '((sum by (proxy) (rate(haproxy_server_http_responses_total{code="5xx"}[1m])) / sum by (proxy) (rate(haproxy_server_http_responses_total[1m]))) * 100) > 5 and sum by (proxy) (rate(haproxy_server_http_responses_total[1m])) > 0'
       for: 1m
       labels:
         severity: critical
@@ -24,7 +24,7 @@ groups:
         description: "Too many HTTP requests with status 5xx (> 5%) on backend {{ $labels.fqdn }}/{{ $labels.backend }}\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: HaproxyHighHttp4xxErrorRateServer
-      expr: '((sum by (server) (rate(haproxy_server_http_responses_total{code="4xx"}[1m])) / sum by (server) (rate(haproxy_server_http_responses_total[1m]))) * 100) > 5'
+      expr: '((sum by (server) (rate(haproxy_server_http_responses_total{code="4xx"}[1m])) / sum by (server) (rate(haproxy_server_http_responses_total[1m]))) * 100) > 5 and sum by (server) (rate(haproxy_server_http_responses_total[1m])) > 0'
       for: 1m
       labels:
         severity: critical
@@ -33,7 +33,7 @@ groups:
         description: "Too many HTTP requests with status 4xx (> 5%) on server {{ $labels.server }}\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: HaproxyHighHttp5xxErrorRateServer
-      expr: '((sum by (server) (rate(haproxy_server_http_responses_total{code="5xx"}[1m])) / sum by (server) (rate(haproxy_server_http_responses_total[1m]))) * 100) > 5'
+      expr: '((sum by (server) (rate(haproxy_server_http_responses_total{code="5xx"}[1m])) / sum by (server) (rate(haproxy_server_http_responses_total[1m]))) * 100) > 5 and sum by (server) (rate(haproxy_server_http_responses_total[1m])) > 0'
       for: 1m
       labels:
         severity: critical
@@ -42,7 +42,7 @@ groups:
         description: "Too many HTTP requests with status 5xx (> 5%) on server {{ $labels.server }}\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: HaproxyServerResponseErrors
-      expr: '(sum by (server) (rate(haproxy_server_response_errors_total[1m])) / sum by (server) (rate(haproxy_server_http_responses_total[1m]))) * 100 > 5'
+      expr: '(sum by (server) (rate(haproxy_server_response_errors_total[1m])) / sum by (server) (rate(haproxy_server_http_responses_total[1m]))) * 100 > 5 and sum by (server) (rate(haproxy_server_http_responses_total[1m])) > 0'
       for: 1m
       labels:
         severity: critical
@@ -77,8 +77,9 @@ groups:
         summary: HAProxy backend max active session > 80% (instance {{ $labels.instance }})
         description: "Session limit from backend {{ $labels.proxy }} reached 80% of limit - {{ $value | printf \"%.2f\"}}%\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
+    # haproxy_backend_current_queue is a gauge (current queue depth), not a counter.
     - alert: HaproxyPendingRequests
-      expr: 'sum by (proxy) (rate(haproxy_backend_current_queue[2m])) > 0'
+      expr: 'sum by (proxy) (haproxy_backend_current_queue) > 0'
       for: 2m
       labels:
         severity: warning

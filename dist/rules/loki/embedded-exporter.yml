@@ -15,7 +15,7 @@ groups:
         description: "A loki process had too many restarts (target {{ $labels.instance }})\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: LokiRequestErrors
-      expr: '100 * sum(rate(loki_request_duration_seconds_count{status_code=~"5.."}[1m])) by (namespace, job, route) / sum(rate(loki_request_duration_seconds_count[1m])) by (namespace, job, route) > 10'
+      expr: '100 * sum(rate(loki_request_duration_seconds_count{status_code=~"5.."}[1m])) by (namespace, job, route) / sum(rate(loki_request_duration_seconds_count[1m])) by (namespace, job, route) > 10 and sum(rate(loki_request_duration_seconds_count[1m])) by (namespace, job, route) > 0'
       for: 15m
       labels:
         severity: critical

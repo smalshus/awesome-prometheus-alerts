@@ -25,7 +25,7 @@ groups:
         description: "eBPF exporter is experiencing decoder errors for config {{ $labels.config }}. Kernel data is not being correctly transformed into labels. (instance {{ $labels.instance }})\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: EbpfExporterNoEnabledConfigs
-      expr: 'absent(ebpf_exporter_enabled_configs)'
+      expr: 'ebpf_exporter_enabled_configs == 0 or absent(ebpf_exporter_enabled_configs)'
       for: 5m
       labels:
         severity: warning

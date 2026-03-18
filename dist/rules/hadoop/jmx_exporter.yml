@@ -33,7 +33,7 @@ groups:
         description: "The Hadoop DataNode is not sending heartbeats.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: HadoopHdfsDiskSpaceLow
-      expr: '(hadoop_hdfs_bytes_total - hadoop_hdfs_bytes_used) / hadoop_hdfs_bytes_total < 0.1'
+      expr: '(hadoop_hdfs_bytes_total - hadoop_hdfs_bytes_used) / hadoop_hdfs_bytes_total < 0.1 and hadoop_hdfs_bytes_total > 0'
       for: 15m
       labels:
         severity: warning

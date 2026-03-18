@@ -18,7 +18,7 @@ groups:
     # If all targets are down, PrometheusJobMissing or PrometheusAllTargetsMissing will fire instead.
     - alert: PrometheusTargetMissing
       expr: 'up == 0 unless on(job) (sum by (job) (up) == 0)'
-      for: 0m
+      for: 1m
       labels:
         severity: critical
       annotations:
@@ -27,7 +27,7 @@ groups:
 
     - alert: PrometheusAllTargetsMissing
       expr: 'sum by (job) (up) == 0'
-      for: 0m
+      for: 1m
       labels:
         severity: critical
       annotations:
@@ -36,7 +36,7 @@ groups:
 
     - alert: PrometheusTargetMissingWithWarmupTime
       expr: 'sum by (instance, job) ((up == 0) * on (instance) group_left(__name__) (node_time_seconds - node_boot_time_seconds > 600))'
-      for: 0m
+      for: 1m
       labels:
         severity: critical
       annotations:

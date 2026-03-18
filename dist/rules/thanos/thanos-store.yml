@@ -6,7 +6,7 @@ groups:
   rules:
 
     - alert: ThanosStoreGrpcErrorRate
-      expr: '(sum by (job) (rate(grpc_server_handled_total{grpc_code=~"Unknown|ResourceExhausted|Internal|Unavailable|DataLoss|DeadlineExceeded", job=~".*thanos-store.*"}[5m]))/  sum by (job) (rate(grpc_server_started_total{job=~".*thanos-store.*"}[5m])) * 100 > 5)'
+      expr: '(sum by (job) (rate(grpc_server_handled_total{grpc_code=~"Unknown|ResourceExhausted|Internal|Unavailable|DataLoss|DeadlineExceeded", job=~".*thanos-store.*"}[5m]))/  sum by (job) (rate(grpc_server_started_total{job=~".*thanos-store.*"}[5m])) * 100 > 5) and sum by (job) (rate(grpc_server_started_total{job=~".*thanos-store.*"}[5m])) > 0'
       for: 5m
       labels:
         severity: warning
@@ -24,7 +24,7 @@ groups:
         description: "Thanos Store {{$labels.job}} has a 99th percentile latency of {{$value}} seconds for store series gate requests.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: ThanosStoreBucketHighOperationFailures
-      expr: '(sum by (job) (rate(thanos_objstore_bucket_operation_failures_total{job=~".*thanos-store.*"}[5m])) / sum by (job) (rate(thanos_objstore_bucket_operations_total{job=~".*thanos-store.*"}[5m])) * 100 > 5)'
+      expr: '(sum by (job) (rate(thanos_objstore_bucket_operation_failures_total{job=~".*thanos-store.*"}[5m])) / sum by (job) (rate(thanos_objstore_bucket_operations_total{job=~".*thanos-store.*"}[5m])) * 100 > 5) and sum by (job) (rate(thanos_objstore_bucket_operations_total{job=~".*thanos-store.*"}[5m])) > 0'
       for: 15m
       labels:
         severity: warning

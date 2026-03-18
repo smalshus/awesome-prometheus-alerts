@@ -78,7 +78,7 @@ groups:
         description: "Too many cursors are timing out\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: MongodbTooManyConnections
-      expr: 'mongodb_connections{state="current"} / (mongodb_connections{state="current"} + mongodb_connections{state="available"}) * 100 > 80'
+      expr: 'mongodb_connections{state="current"} / (mongodb_connections{state="current"} + mongodb_connections{state="available"}) * 100 > 80 and (mongodb_connections{state="current"} + mongodb_connections{state="available"}) > 0'
       for: 2m
       labels:
         severity: warning

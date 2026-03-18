@@ -81,7 +81,7 @@ groups:
 
     # Fires when the blocklist grows more than 40% over 7 days.
     - alert: TempoBlockListRisingQuickly
-      expr: '(avg(tempodb_blocklist_length) / avg(tempodb_blocklist_length offset 7d) - 1) * 100 > 40'
+      expr: '(avg(tempodb_blocklist_length) / avg(tempodb_blocklist_length offset 7d) - 1) * 100 > 40 and avg(tempodb_blocklist_length offset 7d) > 0'
       for: 15m
       labels:
         severity: critical
@@ -146,7 +146,7 @@ groups:
         description: "Tempo metrics generator processor updates are failing for {{ $labels.job }}.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: TempoMetricsGeneratorServiceGraphsDroppingSpans
-      expr: '100 * sum by (job) (rate(tempo_metrics_generator_processor_service_graphs_dropped_spans[5m])) / sum by (job) (rate(tempo_metrics_generator_spans_received_total[5m])) > 0.5'
+      expr: '100 * sum by (job) (rate(tempo_metrics_generator_processor_service_graphs_dropped_spans[5m])) / sum by (job) (rate(tempo_metrics_generator_spans_received_total[5m])) > 0.5 and sum by (job) (rate(tempo_metrics_generator_spans_received_total[5m])) > 0'
       for: 15m
       labels:
         severity: warning
@@ -165,7 +165,7 @@ groups:
 
     # Fires when the memcached error rate exceeds 20%. Only relevant if Tempo is configured with memcached caching.
     - alert: TempoMemcachedErrorsElevated
-      expr: '100 * sum by (name, job) (rate(tempo_memcache_request_duration_seconds_count{status_code="500"}[5m])) / sum by (name, job) (rate(tempo_memcache_request_duration_seconds_count[5m])) > 20'
+      expr: '100 * sum by (name, job) (rate(tempo_memcache_request_duration_seconds_count{status_code="500"}[5m])) / sum by (name, job) (rate(tempo_memcache_request_duration_seconds_count[5m])) > 20 and sum by (name, job) (rate(tempo_memcache_request_duration_seconds_count[5m])) > 0'
       for: 10m
       labels:
         severity: warning

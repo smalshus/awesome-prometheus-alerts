@@ -101,7 +101,7 @@ groups:
     # When the pool is near saturation, requests may block waiting for a connection.
     # Increase db_pool_size in gitlab.rb or investigate slow queries.
     - alert: GitlabDatabaseConnectionPoolSaturation
-      expr: 'gitlab_database_connection_pool_busy / gitlab_database_connection_pool_size * 100 > 90'
+      expr: 'gitlab_database_connection_pool_busy / gitlab_database_connection_pool_size * 100 > 90 and gitlab_database_connection_pool_size > 0'
       for: 5m
       labels:
         severity: warning
@@ -198,7 +198,7 @@ groups:
         description: "Multiple GitLab versions are running across the fleet.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: GitlabHighFileDescriptorUsage
-      expr: 'process_open_fds{job=~".*gitlab.*"} / process_max_fds * 100 > 80'
+      expr: 'process_open_fds{job=~".*gitlab.*"} / process_max_fds * 100 > 80 and process_max_fds > 0'
       for: 5m
       labels:
         severity: warning

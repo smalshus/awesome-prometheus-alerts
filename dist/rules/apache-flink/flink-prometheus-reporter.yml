@@ -52,10 +52,10 @@ groups:
         summary: Flink checkpoint failures (instance {{ $labels.instance }})
         description: "Flink job {{ $labels.job_name }} has {{ $value }} failed checkpoints in the last 10 minutes.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
-    # Value is in milliseconds. humanizeDuration expects seconds, so the template output may be misleading.
+    # Value is converted from milliseconds to seconds for correct humanizeDuration display.
     # Threshold is 60 seconds. Adjust based on your checkpoint interval and state size.
     - alert: FlinkCheckpointDurationHigh
-      expr: 'flink_jobmanager_job_lastCheckpointDuration > 60000'
+      expr: 'flink_jobmanager_job_lastCheckpointDuration / 1000 > 60'
       for: 5m
       labels:
         severity: warning
