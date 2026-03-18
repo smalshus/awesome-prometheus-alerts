@@ -21,6 +21,7 @@ groups:
                 description: A Prometheus target has disappeared. An exporter might be crashed.
                 query: "up == 0 unless on(job) (sum by (job) (up) == 0)"
                 severity: critical
+                for: 1m
                 comments: |
                   Only fire if at least one target in the job is still up.
                   If all targets are down, PrometheusJobMissing or PrometheusAllTargetsMissing will fire instead.
@@ -28,10 +29,12 @@ groups:
                 description: A Prometheus job does not have living target anymore.
                 query: "sum by (job) (up) == 0"
                 severity: critical
+                for: 1m
               - name: Prometheus target missing with warmup time
                 description: "Allow a job time to start up (10 minutes) before alerting that it's down."
                 query: "sum by (instance, job) ((up == 0) * on (instance) group_left(__name__) (node_time_seconds - node_boot_time_seconds > 600))"
                 severity: critical
+                for: 1m
               - name: Prometheus configuration reload failure
                 description: Prometheus configuration reload error
                 query: "prometheus_config_last_reload_successful != 1"
@@ -155,11 +158,11 @@ groups:
                   You may want to increase the alert manager 'repeat_interval' for this type of alert to daily or weekly
               - name: Host unusual network throughput in
                 description: Host receive bandwidth is high (>80%).
-                query: "((rate(node_network_receive_bytes_total[5m]) / node_network_speed_bytes) > .80)"
+                query: "((rate(node_network_receive_bytes_total[5m]) / node_network_speed_bytes) > .80) and node_network_speed_bytes > 0"
                 severity: warning
               - name: Host unusual network throughput out
                 description: Host transmit bandwidth is high (>80%)
-                query: "((rate(node_network_transmit_bytes_total[5m]) / node_network_speed_bytes) > .80)"
+                query: "((rate(node_network_transmit_bytes_total[5m]) / node_network_speed_bytes) > .80) and node_network_speed_bytes > 0"
                 severity: warning
               - name: Host disk IO utilization high
                 description: Disk utilization is high (> 80%)
@@ -185,7 +188,7 @@ groups:
                 for: 2m
               - name: Host out of inodes
                 description: Disk is almost running out of available inodes (< 10% left)
-                query: "(node_filesystem_files_free / node_filesystem_files < .10 and ON (instance, device, mountpoint) node_filesystem_readonly == 0)"
+                query: "(node_filesystem_files_free / node_filesystem_files < .10 and ON (instance, device, mountpoint) node_filesystem_readonly == 0) and node_filesystem_files > 0"
                 severity: critical
                 for: 2m
               - name: Host filesystem device error
@@ -243,7 +246,7 @@ groups:
                   Please read: https://github.com/samber/awesome-prometheus-alerts/issues/58
               - name: Host swap is filling up
                 description: Swap is filling up (>80%)
-                query: "((1 - (node_memory_SwapFree_bytes / node_memory_SwapTotal_bytes)) * 100 > 80)"
+                query: "((1 - (node_memory_SwapFree_bytes / node_memory_SwapTotal_bytes)) * 100 > 80) and node_memory_SwapTotal_bytes > 0"
                 severity: warning
                 for: 2m
               - name: Host systemd service crashed
@@ -261,7 +264,9 @@ groups:
                 severity: critical
               - name: Host software RAID insufficient drives
                 description: "MD RAID array {{ $labels.device }} on {{ $labels.instance }} has insufficient drives remaining."
-                query: '((node_md_disks_required - on(device, instance) node_md_disks{state="active"}) > 0)'
+                query: '((node_md_disks_required - ignoring(state) node_md_disks{state="active"}) > 0)'
+                comments: |
+                  Uses ignoring(state) to handle additional labels on node_md_disks. Matches the official node-exporter mixin.
                 severity: critical
               - name: Host software RAID disk failure
                 description: "MD RAID array {{ $labels.device }} on {{ $labels.instance }} needs attention."
@@ -288,12 +293,12 @@ groups:
                 severity: warning
               - name: Host Network Receive Errors
                 description: 'Host {{ $labels.instance }} interface {{ $labels.device }} has encountered {{ printf "%.0f" $value }} receive errors in the last two minutes.'
-                query: "(rate(node_network_receive_errs_total[2m]) / rate(node_network_receive_packets_total[2m]) > 0.01)"
+                query: "(rate(node_network_receive_errs_total[2m]) / rate(node_network_receive_packets_total[2m]) > 0.01) and rate(node_network_receive_packets_total[2m]) > 0"
                 severity: warning
                 for: 2m
               - name: Host Network Transmit Errors
                 description: 'Host {{ $labels.instance }} interface {{ $labels.device }} has encountered {{ printf "%.0f" $value }} transmit errors in the last two minutes.'
-                query: "(rate(node_network_transmit_errs_total[2m]) / rate(node_network_transmit_packets_total[2m]) > 0.01)"
+                query: "(rate(node_network_transmit_errs_total[2m]) / rate(node_network_transmit_packets_total[2m]) > 0.01) and rate(node_network_transmit_packets_total[2m]) > 0"
                 severity: warning
                 for: 2m
               - name: Host Network Bond Degraded
@@ -303,7 +308,7 @@ groups:
                 for: 2m
               - name: Host conntrack limit
                 description: "The number of conntrack is approaching limit"
-                query: "(node_nf_conntrack_entries / node_nf_conntrack_entries_limit > 0.8)"
+                query: "(node_nf_conntrack_entries / node_nf_conntrack_entries_limit > 0.8) and node_nf_conntrack_entries_limit > 0"
                 severity: warning
                 for: 5m
               - name: Host clock skew
@@ -473,7 +478,9 @@ groups:
                   This rule can be very noisy in dynamic infra with legitimate container start/stop/deployment.
               - name: Container High CPU utilization
                 description: Container CPU utilization is above 80%
-                query: '(sum(rate(container_cpu_usage_seconds_total{container!=""}[5m])) by (pod, container) / sum(container_spec_cpu_quota{container!=""}/container_spec_cpu_period{container!=""}) by (pod, container) * 100) > 80'
+                query: '(sum(rate(container_cpu_usage_seconds_total{container!=""}[5m])) by (pod, container) / sum(container_spec_cpu_quota{container!=""}/container_spec_cpu_period{container!=""}) by (pod, container) * 100) > 80 and sum(container_spec_cpu_quota{container!=""}/container_spec_cpu_period{container!=""}) by (pod, container) > 0'
+                comments: |
+                  Only fires for containers with explicit CPU limits. Containers without limits have cpu_quota=0, which is filtered out by the guard.
                 severity: warning
                 for: 2m
               - name: Container High Memory usage
@@ -484,12 +491,12 @@ groups:
                 for: 2m
               - name: Container Volume usage
                 description: Container Volume usage is above 80%
-                query: '(1 - (sum(container_fs_inodes_free{name!=""}) BY (instance) / sum(container_fs_inodes_total) BY (instance))) * 100 > 80'
+                query: '(1 - (sum(container_fs_inodes_free{name!=""}) BY (instance) / sum(container_fs_inodes_total) BY (instance))) * 100 > 80 and sum(container_fs_inodes_total) BY (instance) > 0'
                 severity: warning
                 for: 2m
               - name: Container high throttle rate
                 description: Container is being throttled
-                query: 'sum(increase(container_cpu_cfs_throttled_periods_total{container!=""}[5m])) by (container, pod, namespace) / sum(increase(container_cpu_cfs_periods_total[5m])) by (container, pod, namespace) > ( 25 / 100 )'
+                query: 'sum(increase(container_cpu_cfs_throttled_periods_total{container!=""}[5m])) by (container, pod, namespace) / sum(increase(container_cpu_cfs_periods_total[5m])) by (container, pod, namespace) > ( 25 / 100 ) and sum(increase(container_cpu_cfs_periods_total[5m])) by (container, pod, namespace) > 0'
                 severity: warning
                 for: 5m
               - name: Container high low change CPU usage
@@ -584,7 +591,7 @@ groups:
                 for: 2m
               - name: Windows Server disk Space Usage
                 description: Disk usage is more than 80%
-                query: "100.0 - 100 * ((windows_logical_disk_free_bytes / 1024 / 1024 ) / (windows_logical_disk_size_bytes / 1024 / 1024)) > 80"
+                query: "100 - 100 * (windows_logical_disk_free_bytes / windows_logical_disk_size_bytes) > 80 and windows_logical_disk_size_bytes > 0"
                 severity: critical
                 for: 2m
 
@@ -679,22 +686,24 @@ groups:
             rules:
               - name: Netdata high cpu usage
                 description: Netdata high CPU usage (> 80%)
-                query: 'rate(netdata_cpu_cpu_percentage_average{dimension="idle"}[1m]) > 80'
+                query: 'netdata_cpu_cpu_percentage_average{dimension="idle"} < 20'
                 severity: warning
                 for: 5m
+                comments: |
+                  This is a gauge metric (not a counter). Checking idle < 20% means CPU usage > 80%.
               - name: Host CPU steal noisy neighbor
                 description: CPU steal is > 10%. A noisy neighbor is killing VM performances or a spot instance may be out of credit.
-                query: 'rate(netdata_cpu_cpu_percentage_average{dimension="steal"}[1m]) > 10'
+                query: 'netdata_cpu_cpu_percentage_average{dimension="steal"} > 10'
                 severity: warning
                 for: 5m
               - name: Netdata high memory usage
                 description: Netdata high memory usage (> 80%)
-                query: '100 / netdata_system_ram_MiB_average * netdata_system_ram_MiB_average{dimension=~"free|cached"} < 20'
+                query: '100 / netdata_system_ram_MiB_average * netdata_system_ram_MiB_average{dimension=~"free|cached"} < 20 and netdata_system_ram_MiB_average > 0'
                 severity: warning
                 for: 5m
               - name: Netdata low disk space
                 description: Netdata low disk space (> 80%)
-                query: '100 / netdata_disk_space_GB_average * netdata_disk_space_GB_average{dimension=~"avail|cached"} < 20'
+                query: '100 / netdata_disk_space_GB_average * netdata_disk_space_GB_average{dimension=~"avail|cached"} < 20 and netdata_disk_space_GB_average > 0'
                 severity: warning
                 for: 5m
               - name: Netdata predicted disk full
@@ -739,7 +748,7 @@ groups:
                 for: 5m
               - name: eBPF exporter no enabled configs
                 description: "eBPF exporter has no enabled configurations. No eBPF programs are being run. (instance {{ $labels.instance }})"
-                query: 'absent(ebpf_exporter_enabled_configs)'
+                query: 'ebpf_exporter_enabled_configs == 0 or absent(ebpf_exporter_enabled_configs)'
                 severity: warning
                 for: 5m
 
@@ -836,7 +845,7 @@ groups:
                 for: 5m
               - name: Systemd unit tasks near limit
                 description: "Systemd unit {{ $labels.name }} is using {{ $value | humanizePercentage }} of its task limit. (instance {{ $labels.instance }})"
-                query: 'systemd_unit_tasks_current / ignoring(type) systemd_unit_tasks_max > 0.9 and systemd_unit_tasks_max > 0'
+                query: 'systemd_unit_tasks_current / ignoring(type) systemd_unit_tasks_max > 0.9 and ignoring(type) systemd_unit_tasks_max > 0'
                 severity: warning
                 for: 5m
               - name: Systemd socket refused connections
@@ -876,17 +885,17 @@ groups:
                   1m delay allows a restart without triggering an alert.
               - name: MySQL too many connections (> 80%)
                 description: "More than 80% of MySQL connections are in use on {{ $labels.instance }}"
-                query: "max_over_time(mysql_global_status_threads_connected[1m]) / mysql_global_variables_max_connections * 100 > 80"
+                query: "max_over_time(mysql_global_status_threads_connected[1m]) / mysql_global_variables_max_connections * 100 > 80 and mysql_global_variables_max_connections > 0"
                 severity: warning
                 for: 2m
               - name: MySQL high prepared statements utilization (> 80%)
                 description: "High utilization of prepared statements (>80%) on {{ $labels.instance }}"
-                query: "max_over_time(mysql_global_status_prepared_stmt_count[1m]) / mysql_global_variables_max_prepared_stmt_count * 100 > 80"
+                query: "max_over_time(mysql_global_status_prepared_stmt_count[1m]) / mysql_global_variables_max_prepared_stmt_count * 100 > 80 and mysql_global_variables_max_prepared_stmt_count > 0"
                 severity: warning
                 for: 2m
               - name: MySQL high threads running
                 description: "More than 60% of MySQL connections are in running state on {{ $labels.instance }}"
-                query: "max_over_time(mysql_global_status_threads_running[1m]) / mysql_global_variables_max_connections * 100 > 60"
+                query: "max_over_time(mysql_global_status_threads_running[1m]) / mysql_global_variables_max_connections * 100 > 60 and mysql_global_variables_max_connections > 0"
                 severity: warning
                 for: 2m
               - name: MySQL Slave IO thread not running
@@ -928,7 +937,7 @@ groups:
                 for: 2m
               - name: MySQL too many open files
                 description: MySQL has too many open files, consider increase variables open_files_limit on {{ $labels.instance }}.
-                query: "mysql_global_status_innodb_num_open_files / mysql_global_variables_open_files_limit * 100 > 75"
+                query: "mysql_global_status_innodb_num_open_files / mysql_global_variables_open_files_limit * 100 > 75 and mysql_global_variables_open_files_limit > 0"
                 severity: warning
                 for: 2m
               - name: MySQL InnoDB Force Recovery is enabled
@@ -1006,7 +1015,7 @@ groups:
                 for: 1m
               - name: Postgresql too many dead tuples
                 description: PostgreSQL dead tuples is too large
-                query: "((pg_stat_user_tables_n_dead_tup > 10000) / (pg_stat_user_tables_n_live_tup + pg_stat_user_tables_n_dead_tup)) >= 0.1"
+                query: "((pg_stat_user_tables_n_dead_tup > 10000) / (pg_stat_user_tables_n_live_tup + pg_stat_user_tables_n_dead_tup)) >= 0.1 and (pg_stat_user_tables_n_live_tup + pg_stat_user_tables_n_dead_tup) > 0"
                 severity: warning
                 for: 2m
               - name: Postgresql configuration changed
@@ -1019,7 +1028,7 @@ groups:
                 severity: warning
               - name: Postgresql too many locks acquired
                 description: Too many locks acquired on the database. If this alert happens frequently, we may need to increase the postgres setting max_locks_per_transaction.
-                query: "((sum by (instance) (pg_locks_count)) / (pg_settings_max_locks_per_transaction * pg_settings_max_connections)) > 0.20"
+                query: "((sum by (instance) (pg_locks_count)) / (pg_settings_max_locks_per_transaction * pg_settings_max_connections)) > 0.20 and (pg_settings_max_locks_per_transaction * pg_settings_max_connections) > 0"
                 severity: critical
                 for: 2m
               - name: Postgresql bloat index high (> 80%)
@@ -1204,7 +1213,7 @@ groups:
                 severity: critical
               - name: Redis out of system memory
                 description: Redis is running out of system memory (> 90%)
-                query: "redis_memory_used_bytes / redis_total_system_memory_bytes * 100 > 90"
+                query: "redis_memory_used_bytes / redis_total_system_memory_bytes * 100 > 90 and redis_total_system_memory_bytes > 0"
                 severity: warning
                 for: 2m
                 comments: |
@@ -1216,7 +1225,7 @@ groups:
                 for: 2m
               - name: Redis too many connections
                 description: Redis is running out of connections (> 90% used)
-                query: "redis_connected_clients / redis_config_maxclients * 100 > 90"
+                query: "redis_connected_clients / redis_config_maxclients * 100 > 90 and redis_config_maxclients > 0"
                 severity: warning
                 for: 2m
               - name: Redis not enough connections
@@ -1331,7 +1340,7 @@ groups:
                 for: 2m
               - name: MongoDB too many connections
                 description: Too many connections (> 80%)
-                query: 'mongodb_ss_connections{conn_type="current"} / (mongodb_ss_connections{conn_type="current"} + mongodb_ss_connections{conn_type="available"}) * 100 > 80'
+                query: 'mongodb_ss_connections{conn_type="current"} / (mongodb_ss_connections{conn_type="current"} + mongodb_ss_connections{conn_type="available"}) * 100 > 80 and (mongodb_ss_connections{conn_type="current"} + mongodb_ss_connections{conn_type="available"}) > 0'
                 severity: warning
                 for: 2m
 
@@ -1375,7 +1384,7 @@ groups:
                 for: 2m
               - name: MongoDB too many connections
                 description: Too many connections (> 80%)
-                query: 'mongodb_connections{state="current"} / (mongodb_connections{state="current"} + mongodb_connections{state="available"}) * 100 > 80'
+                query: 'mongodb_connections{state="current"} / (mongodb_connections{state="current"} + mongodb_connections{state="available"}) * 100 > 80 and (mongodb_connections{state="current"} + mongodb_connections{state="available"}) > 0'
                 severity: warning
                 for: 2m
           - name: stefanprodan/mgob
@@ -1395,21 +1404,21 @@ groups:
             rules:
               - name: Elasticsearch Heap Usage Too High
                 description: "The heap usage is over 90%"
-                query: '(elasticsearch_jvm_memory_used_bytes{area="heap"} / elasticsearch_jvm_memory_max_bytes{area="heap"}) * 100 > 90'
+                query: '(elasticsearch_jvm_memory_used_bytes{area="heap"} / elasticsearch_jvm_memory_max_bytes{area="heap"}) * 100 > 90 and elasticsearch_jvm_memory_max_bytes{area="heap"} > 0'
                 severity: critical
                 for: 2m
               - name: Elasticsearch Heap Usage warning
                 description: "The heap usage is over 80%"
-                query: '(elasticsearch_jvm_memory_used_bytes{area="heap"} / elasticsearch_jvm_memory_max_bytes{area="heap"}) * 100 > 80'
+                query: '(elasticsearch_jvm_memory_used_bytes{area="heap"} / elasticsearch_jvm_memory_max_bytes{area="heap"}) * 100 > 80 and elasticsearch_jvm_memory_max_bytes{area="heap"} > 0'
                 severity: warning
                 for: 2m
               - name: Elasticsearch disk out of space
                 description: The disk usage is over 90%
-                query: "elasticsearch_filesystem_data_available_bytes / elasticsearch_filesystem_data_size_bytes * 100 < 10"
+                query: "elasticsearch_filesystem_data_available_bytes / elasticsearch_filesystem_data_size_bytes * 100 < 10 and elasticsearch_filesystem_data_size_bytes > 0"
                 severity: critical
               - name: Elasticsearch disk space low
                 description: The disk usage is over 80%
-                query: "elasticsearch_filesystem_data_available_bytes / elasticsearch_filesystem_data_size_bytes * 100 < 20"
+                query: "elasticsearch_filesystem_data_available_bytes / elasticsearch_filesystem_data_size_bytes * 100 < 20 and elasticsearch_filesystem_data_size_bytes > 0"
                 severity: warning
                 for: 2m
               - name: Elasticsearch Cluster Red
@@ -1684,17 +1693,17 @@ groups:
                 for: 5m
               - name: ClickHouse Disk Space Low on Default
                 description: "Disk space on default is below 20%."
-                query: "ClickHouseAsyncMetrics_DiskAvailable_default / (ClickHouseAsyncMetrics_DiskAvailable_default + ClickHouseAsyncMetrics_DiskUsed_default) * 100 < 20"
+                query: "ClickHouseAsyncMetrics_DiskAvailable_default / (ClickHouseAsyncMetrics_DiskAvailable_default + ClickHouseAsyncMetrics_DiskUsed_default) * 100 < 20 and (ClickHouseAsyncMetrics_DiskAvailable_default + ClickHouseAsyncMetrics_DiskUsed_default) > 0"
                 severity: warning
                 for: 2m
               - name: ClickHouse Disk Space Critical on Default
                 description: "Disk space on default disk is critically low, below 10%."
-                query: "ClickHouseAsyncMetrics_DiskAvailable_default / (ClickHouseAsyncMetrics_DiskAvailable_default + ClickHouseAsyncMetrics_DiskUsed_default) * 100 < 10"
+                query: "ClickHouseAsyncMetrics_DiskAvailable_default / (ClickHouseAsyncMetrics_DiskAvailable_default + ClickHouseAsyncMetrics_DiskUsed_default) * 100 < 10 and (ClickHouseAsyncMetrics_DiskAvailable_default + ClickHouseAsyncMetrics_DiskUsed_default) > 0"
                 severity: critical
                 for: 2m
               - name: ClickHouse Disk Space Low on Backups
                 description: "Disk space on backups is below 20%."
-                query: "ClickHouseAsyncMetrics_DiskAvailable_backups / (ClickHouseAsyncMetrics_DiskAvailable_backups + ClickHouseAsyncMetrics_DiskUsed_backups) * 100 < 20"
+                query: "ClickHouseAsyncMetrics_DiskAvailable_backups / (ClickHouseAsyncMetrics_DiskAvailable_backups + ClickHouseAsyncMetrics_DiskUsed_backups) * 100 < 20 and (ClickHouseAsyncMetrics_DiskAvailable_backups + ClickHouseAsyncMetrics_DiskUsed_backups) > 0"
                 severity: warning
                 for: 2m
               - name: ClickHouse Replica Errors
@@ -1852,7 +1861,7 @@ groups:
                 for: 5m
               - name: CouchDB file descriptors high
                 description: Process is using more than 85% of allowed file descriptors
-                query: "process_open_fds / process_max_fds > 0.85"
+                query: "process_open_fds / process_max_fds > 0.85 and process_max_fds > 0"
                 severity: warning
                 for: 5m
               - name: CouchDB process restarted
@@ -2228,12 +2237,12 @@ groups:
             rules:
               - name: Nginx high HTTP 4xx error rate
                 description: Too many HTTP requests with status 4xx (> 5%)
-                query: 'sum(rate(nginx_http_requests_total{status=~"^4.."}[1m])) / sum(rate(nginx_http_requests_total[1m])) * 100 > 5'
+                query: 'sum(rate(nginx_http_requests_total{status=~"^4.."}[1m])) / sum(rate(nginx_http_requests_total[1m])) * 100 > 5 and sum(rate(nginx_http_requests_total[1m])) > 0'
                 severity: critical
                 for: 1m
               - name: Nginx high HTTP 5xx error rate
                 description: Too many HTTP requests with status 5xx (> 5%)
-                query: 'sum(rate(nginx_http_requests_total{status=~"^5.."}[1m])) / sum(rate(nginx_http_requests_total[1m])) * 100 > 5'
+                query: 'sum(rate(nginx_http_requests_total{status=~"^5.."}[1m])) / sum(rate(nginx_http_requests_total[1m])) * 100 > 5 and sum(rate(nginx_http_requests_total[1m])) > 0'
                 severity: critical
                 for: 1m
               - name: Nginx latency high
@@ -2254,7 +2263,7 @@ groups:
                 severity: critical
               - name: Apache workers load
                 description: Apache workers in busy state approach the max workers count 80% workers busy on {{ $labels.instance }}
-                query: '(sum by (instance) (apache_workers{state="busy"}) / sum by (instance) (apache_scoreboard) ) * 100 > 80'
+                query: '(sum by (instance) (apache_workers{state="busy"}) / sum by (instance) (apache_scoreboard) ) * 100 > 80 and sum by (instance) (apache_scoreboard) > 0'
                 severity: warning
                 for: 2m
               - name: Apache restart
@@ -2270,27 +2279,27 @@ groups:
             rules:
               - name: HAProxy high HTTP 4xx error rate backend
                 description: Too many HTTP requests with status 4xx (> 5%) on backend {{ $labels.fqdn }}/{{ $labels.backend }}
-                query: ((sum by (proxy) (rate(haproxy_server_http_responses_total{code="4xx"}[1m])) / sum by (proxy) (rate(haproxy_server_http_responses_total[1m]))) * 100) > 5
+                query: ((sum by (proxy) (rate(haproxy_server_http_responses_total{code="4xx"}[1m])) / sum by (proxy) (rate(haproxy_server_http_responses_total[1m]))) * 100) > 5 and sum by (proxy) (rate(haproxy_server_http_responses_total[1m])) > 0
                 severity: critical
                 for: 1m
               - name: HAProxy high HTTP 5xx error rate backend
                 description: Too many HTTP requests with status 5xx (> 5%) on backend {{ $labels.fqdn }}/{{ $labels.backend }}
-                query: ((sum by (proxy) (rate(haproxy_server_http_responses_total{code="5xx"}[1m])) / sum by (proxy) (rate(haproxy_server_http_responses_total[1m]))) * 100) > 5
+                query: ((sum by (proxy) (rate(haproxy_server_http_responses_total{code="5xx"}[1m])) / sum by (proxy) (rate(haproxy_server_http_responses_total[1m]))) * 100) > 5 and sum by (proxy) (rate(haproxy_server_http_responses_total[1m])) > 0
                 severity: critical
                 for: 1m
               - name: HAProxy high HTTP 4xx error rate server
                 description: Too many HTTP requests with status 4xx (> 5%) on server {{ $labels.server }}
-                query: ((sum by (server) (rate(haproxy_server_http_responses_total{code="4xx"}[1m])) / sum by (server) (rate(haproxy_server_http_responses_total[1m]))) * 100) > 5
+                query: ((sum by (server) (rate(haproxy_server_http_responses_total{code="4xx"}[1m])) / sum by (server) (rate(haproxy_server_http_responses_total[1m]))) * 100) > 5 and sum by (server) (rate(haproxy_server_http_responses_total[1m])) > 0
                 severity: critical
                 for: 1m
               - name: HAProxy high HTTP 5xx error rate server
                 description: Too many HTTP requests with status 5xx (> 5%) on server {{ $labels.server }}
-                query: ((sum by (server) (rate(haproxy_server_http_responses_total{code="5xx"}[1m])) / sum by (server) (rate(haproxy_server_http_responses_total[1m]))) * 100) > 5
+                query: ((sum by (server) (rate(haproxy_server_http_responses_total{code="5xx"}[1m])) / sum by (server) (rate(haproxy_server_http_responses_total[1m]))) * 100) > 5 and sum by (server) (rate(haproxy_server_http_responses_total[1m])) > 0
                 severity: critical
                 for: 1m
               - name: HAProxy server response errors
                 description: Too many response errors to {{ $labels.server }} server (> 5%).
-                query: (sum by (server) (rate(haproxy_server_response_errors_total[1m])) / sum by (server) (rate(haproxy_server_http_responses_total[1m]))) * 100 > 5
+                query: (sum by (server) (rate(haproxy_server_response_errors_total[1m])) / sum by (server) (rate(haproxy_server_http_responses_total[1m]))) * 100 > 5 and sum by (server) (rate(haproxy_server_http_responses_total[1m])) > 0
                 severity: critical
                 for: 1m
               - name: HAProxy backend connection errors
@@ -2309,7 +2318,9 @@ groups:
                 for: 2m
               - name: HAProxy pending requests
                 description: Some HAProxy requests are pending on {{ $labels.proxy }} - {{ $value | printf "%.2f"}}
-                query: sum by (proxy) (rate(haproxy_backend_current_queue[2m])) > 0
+                query: sum by (proxy) (haproxy_backend_current_queue) > 0
+                comments: |
+                  haproxy_backend_current_queue is a gauge (current queue depth), not a counter.
                 severity: warning
                 for: 2m
               - name: HAProxy HTTP slowing down
@@ -2346,27 +2357,27 @@ groups:
                 severity: critical
               - name: HAProxy high HTTP 4xx error rate backend
                 description: Too many HTTP requests with status 4xx (> 5%) on backend {{ $labels.fqdn }}/{{ $labels.backend }}
-                query: 'sum by (backend) (rate(haproxy_server_http_responses_total{code="4xx"}[1m])) / sum by (backend) (rate(haproxy_server_http_responses_total[1m])) > 5'
+                query: 'sum by (backend) (rate(haproxy_server_http_responses_total{code="4xx"}[1m])) / sum by (backend) (rate(haproxy_server_http_responses_total[1m])) > 5 and sum by (backend) (rate(haproxy_server_http_responses_total[1m])) > 0'
                 severity: critical
                 for: 1m
               - name: HAProxy high HTTP 5xx error rate backend
                 description: Too many HTTP requests with status 5xx (> 5%) on backend {{ $labels.fqdn }}/{{ $labels.backend }}
-                query: 'sum by (backend) (rate(haproxy_server_http_responses_total{code="5xx"}[1m])) / sum by (backend) (rate(haproxy_server_http_responses_total[1m])) > 5'
+                query: 'sum by (backend) (rate(haproxy_server_http_responses_total{code="5xx"}[1m])) / sum by (backend) (rate(haproxy_server_http_responses_total[1m])) > 5 and sum by (backend) (rate(haproxy_server_http_responses_total[1m])) > 0'
                 severity: critical
                 for: 1m
               - name: HAProxy high HTTP 4xx error rate server
                 description: Too many HTTP requests with status 4xx (> 5%) on server {{ $labels.server }}
-                query: 'sum by (server) (rate(haproxy_server_http_responses_total{code="4xx"}[1m]) * 100) / sum by (server) (rate(haproxy_server_http_responses_total[1m])) > 5'
+                query: 'sum by (server) (rate(haproxy_server_http_responses_total{code="4xx"}[1m]) * 100) / sum by (server) (rate(haproxy_server_http_responses_total[1m])) > 5 and sum by (server) (rate(haproxy_server_http_responses_total[1m])) > 0'
                 severity: critical
                 for: 1m
               - name: HAProxy high HTTP 5xx error rate server
                 description: Too many HTTP requests with status 5xx (> 5%) on server {{ $labels.server }}
-                query: 'sum by (server) (rate(haproxy_server_http_responses_total{code="5xx"}[1m]) * 100) / sum by (server) (rate(haproxy_server_http_responses_total[1m])) > 5'
+                query: 'sum by (server) (rate(haproxy_server_http_responses_total{code="5xx"}[1m]) * 100) / sum by (server) (rate(haproxy_server_http_responses_total[1m])) > 5 and sum by (server) (rate(haproxy_server_http_responses_total[1m])) > 0'
                 severity: critical
                 for: 1m
               - name: HAProxy server response errors
                 description: Too many response errors to {{ $labels.server }} server (> 5%).
-                query: "sum by (server) (rate(haproxy_server_response_errors_total[1m]) * 100) / sum by (server) (rate(haproxy_server_http_responses_total[1m])) > 5"
+                query: "sum by (server) (rate(haproxy_server_response_errors_total[1m]) * 100) / sum by (server) (rate(haproxy_server_http_responses_total[1m])) > 5 and sum by (server) (rate(haproxy_server_http_responses_total[1m])) > 0"
                 severity: critical
                 for: 1m
               - name: HAProxy backend connection errors
@@ -2380,7 +2391,7 @@ groups:
                 severity: critical
               - name: HAProxy backend max active session
                 description: HAproxy backend {{ $labels.fqdn }}/{{ $labels.backend }} is reaching session limit (> 80%).
-                query: "((sum by (backend) (avg_over_time(haproxy_backend_current_sessions[2m]) * 100) / sum by (backend) (avg_over_time(haproxy_backend_limit_sessions[2m])))) > 80"
+                query: "((sum by (backend) (avg_over_time(haproxy_backend_current_sessions[2m]) * 100) / sum by (backend) (avg_over_time(haproxy_backend_limit_sessions[2m])))) > 80 and sum by (backend) (avg_over_time(haproxy_backend_limit_sessions[2m])) > 0"
                 severity: warning
                 for: 2m
               - name: HAProxy pending requests
@@ -2429,12 +2440,12 @@ groups:
                 severity: critical
               - name: Traefik high HTTP 4xx error rate service
                 description: Traefik service 4xx error rate is above 5%
-                query: 'sum(rate(traefik_service_requests_total{code=~"4.*"}[3m])) by (service) / sum(rate(traefik_service_requests_total[3m])) by (service) * 100 > 5'
+                query: 'sum(rate(traefik_service_requests_total{code=~"4.*"}[3m])) by (service) / sum(rate(traefik_service_requests_total[3m])) by (service) * 100 > 5 and sum(rate(traefik_service_requests_total[3m])) by (service) > 0'
                 severity: critical
                 for: 1m
               - name: Traefik high HTTP 5xx error rate service
                 description: Traefik service 5xx error rate is above 5%
-                query: 'sum(rate(traefik_service_requests_total{code=~"5.*"}[3m])) by (service) / sum(rate(traefik_service_requests_total[3m])) by (service) * 100 > 5'
+                query: 'sum(rate(traefik_service_requests_total{code=~"5.*"}[3m])) by (service) / sum(rate(traefik_service_requests_total[3m])) by (service) * 100 > 5 and sum(rate(traefik_service_requests_total[3m])) by (service) > 0'
                 severity: critical
                 for: 1m
           - name: Embedded exporter v1
@@ -2447,12 +2458,12 @@ groups:
                 severity: critical
               - name: Traefik high HTTP 4xx error rate backend
                 description: Traefik backend 4xx error rate is above 5%
-                query: 'sum(rate(traefik_backend_requests_total{code=~"4.*"}[3m])) by (backend) / sum(rate(traefik_backend_requests_total[3m])) by (backend) * 100 > 5'
+                query: 'sum(rate(traefik_backend_requests_total{code=~"4.*"}[3m])) by (backend) / sum(rate(traefik_backend_requests_total[3m])) by (backend) * 100 > 5 and sum(rate(traefik_backend_requests_total[3m])) by (backend) > 0'
                 severity: critical
                 for: 1m
               - name: Traefik high HTTP 5xx error rate backend
                 description: Traefik backend 5xx error rate is above 5%
-                query: 'sum(rate(traefik_backend_requests_total{code=~"5.*"}[3m])) by (backend) / sum(rate(traefik_backend_requests_total[3m])) by (backend) * 100 > 5'
+                query: 'sum(rate(traefik_backend_requests_total{code=~"5.*"}[3m])) by (backend) / sum(rate(traefik_backend_requests_total[3m])) by (backend) * 100 > 5 and sum(rate(traefik_backend_requests_total[3m])) by (backend) > 0'
                 severity: critical
                 for: 1m
 
@@ -2469,12 +2480,12 @@ groups:
 
               - name: Caddy high HTTP 4xx error rate service
                 description: "Caddy service 4xx error rate is above 5%"
-                query: 'sum(rate(caddy_http_request_duration_seconds_count{code=~"4.."}[3m])) by (instance) / sum(rate(caddy_http_request_duration_seconds_count[3m])) by (instance) * 100 > 5'
+                query: 'sum(rate(caddy_http_request_duration_seconds_count{code=~"4.."}[3m])) by (instance) / sum(rate(caddy_http_request_duration_seconds_count[3m])) by (instance) * 100 > 5 and sum(rate(caddy_http_request_duration_seconds_count[3m])) by (instance) > 0'
                 severity: critical
                 for: 1m
               - name: Caddy high HTTP 5xx error rate service
                 description: "Caddy service 5xx error rate is above 5%"
-                query: 'sum(rate(caddy_http_request_duration_seconds_count{code=~"5.."}[3m])) by (instance) / sum(rate(caddy_http_request_duration_seconds_count[3m])) by (instance) * 100 > 5'
+                query: 'sum(rate(caddy_http_request_duration_seconds_count{code=~"5.."}[3m])) by (instance) / sum(rate(caddy_http_request_duration_seconds_count[3m])) by (instance) * 100 > 5 and sum(rate(caddy_http_request_duration_seconds_count[3m])) by (instance) > 0'
                 severity: critical
                 for: 1m
 
@@ -2491,7 +2502,7 @@ groups:
                 for: 1m
               - name: Envoy high memory usage
                 description: "Envoy memory allocated is above 90% of heap size on {{ $labels.instance }}"
-                query: "envoy_server_memory_allocated / envoy_server_memory_heap_size * 100 > 90"
+                query: "envoy_server_memory_allocated / envoy_server_memory_heap_size * 100 > 90 and envoy_server_memory_heap_size > 0"
                 severity: warning
                 for: 5m
               - name: Envoy high downstream HTTP 5xx error rate
@@ -2581,7 +2592,9 @@ groups:
             rules:
               - name: Linkerd high error rate
                 description: "Linkerd error rate for {{ $labels.deployment }}{{ $labels.statefulset }}{{ $labels.daemonset }} is over 10%"
-                query: "sum(rate(request_errors_total[1m])) by (deployment, statefulset, daemonset) / sum(rate(request_total[1m])) by (deployment, statefulset, daemonset) * 100 > 10"
+                query: 'sum(rate(response_total{classification="failure"}[1m])) by (deployment, statefulset, daemonset) / sum(rate(response_total[1m])) by (deployment, statefulset, daemonset) * 100 > 10 and sum(rate(response_total[1m])) by (deployment, statefulset, daemonset) > 0'
+                comments: |
+                  Linkerd does not expose request_errors_total. Errors are tracked via response_total{classification="failure"}.
                 severity: warning
                 for: 1m
 
@@ -2598,7 +2611,7 @@ groups:
                 for: 1m
               - name: Istio Pilot high total request rate
                 description: Number of Istio Pilot push errors is too high (> 5%). Envoy sidecars might have outdated configuration.
-                query: "sum(rate(pilot_xds_push_errors[1m])) / sum(rate(pilot_xds_pushes[1m])) * 100 > 5"
+                query: "sum(rate(pilot_xds_push_errors[1m])) / sum(rate(pilot_xds_pushes[1m])) * 100 > 5 and sum(rate(pilot_xds_pushes[1m])) > 0"
                 severity: warning
                 for: 1m
               - name: Istio Mixer Prometheus dispatches low
@@ -2618,17 +2631,17 @@ groups:
                 for: 2m
               - name: Istio high 4xx error rate
                 description: High percentage of HTTP 4xx responses in Istio (> 5%).
-                query: 'sum(rate(istio_requests_total{reporter="destination", response_code=~"4.*"}[5m])) / sum(rate(istio_requests_total{reporter="destination"}[5m])) * 100 > 5'
+                query: 'sum(rate(istio_requests_total{reporter="destination", response_code=~"4.*"}[5m])) / sum(rate(istio_requests_total{reporter="destination"}[5m])) * 100 > 5 and sum(rate(istio_requests_total{reporter="destination"}[5m])) > 0'
                 severity: warning
                 for: 1m
               - name: Istio high 5xx error rate
                 description: High percentage of HTTP 5xx responses in Istio (> 5%).
-                query: 'sum(rate(istio_requests_total{reporter="destination", response_code=~"5.*"}[5m])) / sum(rate(istio_requests_total{reporter="destination"}[5m])) * 100 > 5'
+                query: 'sum(rate(istio_requests_total{reporter="destination", response_code=~"5.*"}[5m])) / sum(rate(istio_requests_total{reporter="destination"}[5m])) * 100 > 5 and sum(rate(istio_requests_total{reporter="destination"}[5m])) > 0'
                 severity: warning
                 for: 1m
               - name: Istio high request latency
                 description: Istio average requests execution is longer than 100ms.
-                query: 'rate(istio_request_duration_milliseconds_sum{reporter="destination"}[1m]) / rate(istio_request_duration_milliseconds_count{reporter="destination"}[1m]) > 100'
+                query: 'rate(istio_request_duration_milliseconds_sum{reporter="destination"}[1m]) / rate(istio_request_duration_milliseconds_count{reporter="destination"}[1m]) > 100 and rate(istio_request_duration_milliseconds_count{reporter="destination"}[1m]) > 0'
                 severity: warning
                 for: 1m
               - name: Istio latency 99 percentile
@@ -2651,7 +2664,7 @@ groups:
             rules:
               - name: PHP-FPM max-children reached
                 description: PHP-FPM reached max children - {{ $labels.instance }}
-                query: "sum(phpfpm_max_children_reached_total) by (instance) > 0"
+                query: "sum(increase(phpfpm_max_children_reached_total[5m])) by (instance) > 0"
                 severity: warning
 
       - name: JVM
@@ -2662,7 +2675,7 @@ groups:
             rules:
               - name: JVM memory filling up
                 description: JVM memory is filling up (> 80%)
-                query: '(sum by (instance)(jvm_memory_used_bytes{area="heap"}) / sum by (instance)(jvm_memory_max_bytes{area="heap"})) * 100 > 80'
+                query: '(sum by (instance)(jvm_memory_used_bytes{area="heap"}) / sum by (instance)(jvm_memory_max_bytes{area="heap"})) * 100 > 80 and sum by (instance)(jvm_memory_max_bytes{area="heap"}) > 0'
                 severity: warning
                 for: 2m
               - name: JVM non-heap memory filling up
@@ -2703,7 +2716,7 @@ groups:
                   Adjust the gc label filter if you use a different collector.
               - name: JVM direct buffer pool filling up
                 description: JVM direct buffer pool is filling up (> 90%)
-                query: '(jvm_buffer_pool_used_bytes / jvm_buffer_pool_capacity_bytes) * 100 > 90'
+                query: '(jvm_buffer_pool_used_bytes / jvm_buffer_pool_capacity_bytes) * 100 > 90 and jvm_buffer_pool_capacity_bytes > 0'
                 severity: warning
                 for: 5m
               - name: JVM objects pending finalization
@@ -2713,7 +2726,7 @@ groups:
                 for: 5m
               - name: JVM file descriptors exhaustion
                 description: JVM process is running out of file descriptors (> 90% used)
-                query: '(process_open_fds / process_max_fds) * 100 > 90'
+                query: '(process_open_fds / process_max_fds) * 100 > 90 and process_max_fds > 0'
                 severity: warning
                 for: 5m
                 comments: |
@@ -2856,7 +2869,7 @@ groups:
                 for: 5m
               - name: Python file descriptors exhaustion
                 description: Python process is running out of file descriptors (> 90% used)
-                query: '(process_open_fds / process_max_fds) * 100 > 90'
+                query: '(process_open_fds / process_max_fds) * 100 > 90 and process_max_fds > 0'
                 severity: warning
                 for: 5m
                 comments: |
@@ -2931,11 +2944,11 @@ groups:
                 for: 5m
               - name: Flink checkpoint duration high
                 description: "Flink job {{ $labels.job_name }} last checkpoint took {{ $value | humanizeDuration }} to complete."
-                query: "flink_jobmanager_job_lastCheckpointDuration > 60000"
+                query: "flink_jobmanager_job_lastCheckpointDuration / 1000 > 60"
                 severity: warning
                 for: 5m
                 comments: |
-                  Value is in milliseconds. humanizeDuration expects seconds, so the template output may be misleading.
+                  Value is converted from milliseconds to seconds for correct humanizeDuration display.
                   Threshold is 60 seconds. Adjust based on your checkpoint interval and state size.
               - name: Flink task backpressured
                 description: "Flink task {{ $labels.task_name }} in job {{ $labels.job_name }} is backpressured."
@@ -3012,7 +3025,7 @@ groups:
                   Fires when a worker has no free cores. This may be normal under high load but can indicate capacity issues.
               - name: Spark executor high GC time
                 description: "Spark executor {{ $labels.executor_id }} in {{ $labels.application_name }} is spending too much time in GC."
-                query: "metrics_executor_totalGCTime_seconds_total / (metrics_executor_totalDuration > 0) > 0.1"
+                query: "metrics_executor_totalGCTime_seconds_total / metrics_executor_totalDuration > 0.1 and metrics_executor_totalDuration > 0"
                 severity: warning
                 for: 5m
                 comments: |
@@ -3020,12 +3033,12 @@ groups:
                   This metric comes from the PrometheusResource endpoint (/metrics/executors/prometheus/).
               - name: Spark executor all tasks failing
                 description: "Spark executor {{ $labels.executor_id }} has only failing tasks ({{ $value }} failed, 0 completed)."
-                query: "metrics_executor_failedTasks_total > 0 and metrics_executor_completedTasks == 0"
+                query: "metrics_executor_failedTasks_total > 0 and metrics_executor_completedTasks_total == 0"
                 severity: critical
                 for: 5m
               - name: Spark executor high task failure rate
                 description: "Spark executor {{ $labels.executor_id }} has a task failure rate above 10%."
-                query: "metrics_executor_failedTasks_total / (metrics_executor_totalTasks_total > 0) > 0.1"
+                query: "metrics_executor_failedTasks_total / metrics_executor_totalTasks_total > 0.1 and metrics_executor_totalTasks_total > 0"
                 severity: warning
                 for: 5m
               - name: Spark executor high disk spill
@@ -3066,7 +3079,7 @@ groups:
 
               # Alert rule for low HDFS disk space
               - name: Hadoop HDFS Disk Space Low
-                query: (hadoop_hdfs_bytes_total - hadoop_hdfs_bytes_used) / hadoop_hdfs_bytes_total < 0.1
+                query: (hadoop_hdfs_bytes_total - hadoop_hdfs_bytes_used) / hadoop_hdfs_bytes_total < 0.1 and hadoop_hdfs_bytes_total > 0
                 for: 15m
                 severity: warning
                 description: "Available HDFS disk space is running low."
@@ -3191,7 +3204,7 @@ groups:
                 for: 2m
               - name: Kubernetes Volume out of disk space
                 description: Volume is almost full (< 10% left)
-                query: "kubelet_volume_stats_available_bytes / kubelet_volume_stats_capacity_bytes * 100 < 10"
+                query: "kubelet_volume_stats_available_bytes / kubelet_volume_stats_capacity_bytes * 100 < 10 and kubelet_volume_stats_capacity_bytes > 0"
                 severity: warning
                 for: 2m
               - name: Kubernetes Volume full in four days
@@ -3277,7 +3290,7 @@ groups:
               - name: Kubernetes DaemonSet rollout stuck
                 summary: Kubernetes DaemonSet rollout stuck ({{ $labels.namespace }}/{{ $labels.daemonset }})
                 description: Some Pods of DaemonSet {{ $labels.namespace }}/{{ $labels.daemonset }} are not scheduled or not ready
-                query: "kube_daemonset_status_number_ready / kube_daemonset_status_desired_number_scheduled * 100 < 100 or kube_daemonset_status_desired_number_scheduled - kube_daemonset_status_current_number_scheduled > 0"
+                query: "(kube_daemonset_status_number_ready / kube_daemonset_status_desired_number_scheduled * 100 < 100 and kube_daemonset_status_desired_number_scheduled > 0) or kube_daemonset_status_desired_number_scheduled - kube_daemonset_status_current_number_scheduled > 0"
                 severity: warning
                 for: 10m
               - name: Kubernetes DaemonSet misscheduled
@@ -3301,12 +3314,12 @@ groups:
                 for: 12h
               - name: Kubernetes API server errors
                 description: Kubernetes API server is experiencing high error rate
-                query: 'sum(rate(apiserver_request_total{job="apiserver",code=~"(?:5..)"}[1m])) by (instance, job) / sum(rate(apiserver_request_total{job="apiserver"}[1m])) by (instance, job) * 100 > 3'
+                query: 'sum(rate(apiserver_request_total{job="apiserver",code=~"(?:5..)"}[1m])) by (instance, job) / sum(rate(apiserver_request_total{job="apiserver"}[1m])) by (instance, job) * 100 > 3 and sum(rate(apiserver_request_total{job="apiserver"}[1m])) by (instance, job) > 0'
                 severity: critical
                 for: 2m
               - name: Kubernetes API client errors
                 description: Kubernetes API client is experiencing high error rate
-                query: '(sum(rate(rest_client_requests_total{code=~"(4|5).."}[1m])) by (instance, job) / sum(rate(rest_client_requests_total[1m])) by (instance, job)) * 100 > 1'
+                query: '(sum(rate(rest_client_requests_total{code=~"(4|5).."}[1m])) by (instance, job) / sum(rate(rest_client_requests_total[1m])) by (instance, job)) * 100 > 1 and sum(rate(rest_client_requests_total[1m])) by (instance, job) > 0'
                 severity: critical
                 for: 2m
               - name: Kubernetes client certificate expires next week
@@ -3385,14 +3398,18 @@ groups:
                 severity: warning
               - name: Etcd high number of failed GRPC requests
                 description: More than 1% GRPC request failure detected in Etcd
-                query: 'sum(rate(grpc_server_handled_total{grpc_code!="OK"}[1m])) BY (grpc_service, grpc_method) / sum(rate(grpc_server_handled_total[1m])) BY (grpc_service, grpc_method) > 0.01'
+                query: 'sum(rate(grpc_server_handled_total{grpc_code=~"Internal|Unavailable|DeadlineExceeded|ResourceExhausted|Aborted|Unknown"}[1m])) BY (grpc_service, grpc_method) / sum(rate(grpc_server_handled_total[1m])) BY (grpc_service, grpc_method) > 0.01 and sum(rate(grpc_server_handled_total[1m])) BY (grpc_service, grpc_method) > 0'
                 severity: warning
                 for: 2m
+                comments: |
+                  Filters to actual error codes. grpc_code!="OK" includes benign codes like NotFound, AlreadyExists, and Cancelled.
               - name: Etcd high number of failed GRPC requests
                 description: More than 5% GRPC request failure detected in Etcd
-                query: 'sum(rate(grpc_server_handled_total{grpc_code!="OK"}[1m])) BY (grpc_service, grpc_method) / sum(rate(grpc_server_handled_total[1m])) BY (grpc_service, grpc_method) > 0.05'
+                query: 'sum(rate(grpc_server_handled_total{grpc_code=~"Internal|Unavailable|DeadlineExceeded|ResourceExhausted|Aborted|Unknown"}[1m])) BY (grpc_service, grpc_method) / sum(rate(grpc_server_handled_total[1m])) BY (grpc_service, grpc_method) > 0.05 and sum(rate(grpc_server_handled_total[1m])) BY (grpc_service, grpc_method) > 0'
                 severity: critical
                 for: 2m
+                comments: |
+                  Filters to actual error codes. grpc_code!="OK" includes benign codes like NotFound, AlreadyExists, and Cancelled.
               - name: Etcd GRPC requests slow
                 description: GRPC requests slowing down, 99th percentile is over 0.15s
                 query: 'histogram_quantile(0.99, sum(rate(grpc_server_handling_seconds_bucket{grpc_type="unary"}[1m])) by (grpc_service, grpc_method, le)) > 0.15'
@@ -3400,12 +3417,12 @@ groups:
                 for: 2m
               - name: Etcd high number of failed HTTP requests
                 description: More than 1% HTTP failure detected in Etcd
-                query: "sum(rate(etcd_http_failed_total[1m])) BY (method) / sum(rate(etcd_http_received_total[1m])) BY (method) > 0.01"
+                query: "sum(rate(etcd_http_failed_total[1m])) BY (method) / sum(rate(etcd_http_received_total[1m])) BY (method) > 0.01 and sum(rate(etcd_http_received_total[1m])) BY (method) > 0"
                 severity: warning
                 for: 2m
               - name: Etcd high number of failed HTTP requests
                 description: More than 5% HTTP failure detected in Etcd
-                query: "sum(rate(etcd_http_failed_total[1m])) BY (method) / sum(rate(etcd_http_received_total[1m])) BY (method) > 0.05"
+                query: "sum(rate(etcd_http_failed_total[1m])) BY (method) / sum(rate(etcd_http_received_total[1m])) BY (method) > 0.05 and sum(rate(etcd_http_received_total[1m])) BY (method) > 0"
                 severity: critical
                 for: 2m
               - name: Etcd HTTP requests slow
@@ -3715,7 +3732,7 @@ groups:
               # Database connection pool
               - name: GitLab database connection pool saturation
                 description: "GitLab database connection pool on {{ $labels.instance }} ({{ $labels.class }}) is {{ $value }}% busy."
-                query: "gitlab_database_connection_pool_busy / gitlab_database_connection_pool_size * 100 > 90"
+                query: "gitlab_database_connection_pool_busy / gitlab_database_connection_pool_size * 100 > 90 and gitlab_database_connection_pool_size > 0"
                 severity: warning
                 for: 5m
                 comments: |
@@ -3784,7 +3801,7 @@ groups:
               # File descriptors
               - name: GitLab high file descriptor usage
                 description: "GitLab on {{ $labels.instance }} is using {{ $value }}% of available file descriptors."
-                query: 'process_open_fds{job=~".*gitlab.*"} / process_max_fds * 100 > 80'
+                query: 'process_open_fds{job=~".*gitlab.*"} / process_max_fds * 100 > 80 and process_max_fds > 0'
                 severity: warning
                 for: 5m
               # Ruby threads
@@ -4058,12 +4075,12 @@ groups:
                 severity: critical
               - name: Freeswitch Sessions Warning
                 description: 'High sessions usage on {{ $labels.instance }}: {{ $value | printf "%.2f"}}%'
-                query: "(freeswitch_session_active * 100 / freeswitch_session_limit) > 80"
+                query: "(freeswitch_session_active * 100 / freeswitch_session_limit) > 80 and freeswitch_session_limit > 0"
                 severity: warning
                 for: 10m
               - name: Freeswitch Sessions Critical
                 description: 'High sessions usage on {{ $labels.instance }}: {{ $value | printf "%.2f"}}%'
-                query: "(freeswitch_session_active * 100 / freeswitch_session_limit) > 90"
+                query: "(freeswitch_session_active * 100 / freeswitch_session_limit) > 90 and freeswitch_session_limit > 0"
                 severity: critical
                 for: 5m
 
@@ -4146,11 +4163,11 @@ groups:
             rules:
               - name: Cloudflare http 4xx error rate
                 description: "Cloudflare high HTTP 4xx error rate (> 5% for domain {{ $labels.zone }})"
-                query: '(sum by(zone) (rate(cloudflare_zone_requests_status{status=~"^4.."}[15m])) / on (zone) sum by (zone) (rate(cloudflare_zone_requests_status[15m]))) * 100 > 5'
+                query: '(sum by(zone) (rate(cloudflare_zone_requests_status{status=~"^4.."}[15m])) / on (zone) sum by (zone) (rate(cloudflare_zone_requests_status[15m]))) * 100 > 5 and sum by (zone) (rate(cloudflare_zone_requests_status[15m])) > 0'
                 severity: warning
               - name: Cloudflare http 5xx error rate
                 description: "Cloudflare high HTTP 5xx error rate (> 5% for domain {{ $labels.zone }})"
-                query: '(sum by (zone) (rate(cloudflare_zone_requests_status{status=~"^5.."}[5m])) / on (zone) sum by (zone) (rate(cloudflare_zone_requests_status[5m]))) * 100 > 5'
+                query: '(sum by (zone) (rate(cloudflare_zone_requests_status{status=~"^5.."}[5m])) / on (zone) sum by (zone) (rate(cloudflare_zone_requests_status[5m]))) * 100 > 5 and sum by (zone) (rate(cloudflare_zone_requests_status[5m])) > 0'
                 severity: critical
 
       - name: SNMP
@@ -4509,7 +4526,7 @@ groups:
             rules:
               - name: ZFS pool out of space
                 description: Disk is almost full (< 10% left)
-                query: "zfs_pool_free_bytes * 100 / zfs_pool_size_bytes < 10 and ON (instance, device, mountpoint) zfs_pool_readonly == 0"
+                query: "zfs_pool_free_bytes * 100 / zfs_pool_size_bytes < 10 and ON (instance, device, mountpoint) zfs_pool_readonly == 0 and zfs_pool_size_bytes > 0"
                 severity: warning
               - name: ZFS pool unhealthy
                 description: ZFS pool state is {{ $value }}. See comments for more information.
@@ -4554,7 +4571,7 @@ groups:
                 severity: critical
               - name: Minio disk space usage
                 description: "Minio available free space is low (< 10%)"
-                query: minio_cluster_capacity_raw_free_bytes / minio_cluster_capacity_raw_total_bytes * 100 < 10
+                query: minio_cluster_capacity_raw_free_bytes / minio_cluster_capacity_raw_total_bytes * 100 < 10 and minio_cluster_capacity_raw_total_bytes > 0
                 severity: warning
 
   - name: Cloud providers
@@ -4735,7 +4752,7 @@ groups:
                 for: 5m
               - name: DigitalOcean droplet limit approaching
                 description: "DigitalOcean account is using {{ $value }}% of its droplet quota."
-                query: "(count(digitalocean_droplet_up) / digitalocean_account_droplet_limit) * 100 > 80"
+                query: "(count(digitalocean_droplet_up) / digitalocean_account_droplet_limit) * 100 > 80 and digitalocean_account_droplet_limit > 0"
                 severity: warning
                 comments: Fires when more than 80% of the account's droplet limit is in use.
 
@@ -4755,7 +4772,7 @@ groups:
                 severity: warning
               - name: Azure exporter high error rate
                 description: "Azure metrics exporter on {{ $labels.instance }} has an error rate above 10% ({{ $value }}%)."
-                query: 'sum by (instance) (rate(azurerm_stats_metric_requests{result="error"}[5m])) / sum by (instance) (rate(azurerm_stats_metric_requests[5m])) * 100 > 10'
+                query: 'sum by (instance) (rate(azurerm_stats_metric_requests{result="error"}[5m])) / sum by (instance) (rate(azurerm_stats_metric_requests[5m])) * 100 > 10 and sum by (instance) (rate(azurerm_stats_metric_requests[5m])) > 0'
                 severity: warning
                 for: 5m
               - name: Azure API read rate limit approaching
@@ -4796,12 +4813,12 @@ groups:
                 for: 5m
               - name: Thanos Compactor High Compaction Failures
                 description: "Thanos Compact {{$labels.job}} is failing to execute {{$value | humanize}}% of compactions."
-                query: '(sum by (job) (rate(thanos_compact_group_compactions_failures_total{job=~".*thanos-compact.*"}[5m])) / sum by (job) (rate(thanos_compact_group_compactions_total{job=~".*thanos-compact.*"}[5m])) * 100 > 5)'
+                query: '(sum by (job) (rate(thanos_compact_group_compactions_failures_total{job=~".*thanos-compact.*"}[5m])) / sum by (job) (rate(thanos_compact_group_compactions_total{job=~".*thanos-compact.*"}[5m])) * 100 > 5) and sum by (job) (rate(thanos_compact_group_compactions_total{job=~".*thanos-compact.*"}[5m])) > 0'
                 severity: warning
                 for: 15m
               - name: Thanos Compact Bucket High Operation Failures
                 description: "Thanos Compact {{$labels.job}} Bucket is failing to execute {{$value | humanize}}% of operations."
-                query: '(sum by (job) (rate(thanos_objstore_bucket_operation_failures_total{job=~".*thanos-compact.*"}[5m])) / sum by (job) (rate(thanos_objstore_bucket_operations_total{job=~".*thanos-compact.*"}[5m])) * 100 > 5)'
+                query: '(sum by (job) (rate(thanos_objstore_bucket_operation_failures_total{job=~".*thanos-compact.*"}[5m])) / sum by (job) (rate(thanos_objstore_bucket_operations_total{job=~".*thanos-compact.*"}[5m])) * 100 > 5) and sum by (job) (rate(thanos_objstore_bucket_operations_total{job=~".*thanos-compact.*"}[5m])) > 0'
                 severity: warning
                 for: 15m
               - name: Thanos Compact Has Not Run
@@ -4814,27 +4831,27 @@ groups:
             rules:
               - name: Thanos Query Http Request Query Error Rate High
                 description: 'Thanos Query {{$labels.job}} is failing to handle {{$value | humanize}}% of "query" requests.'
-                query: '(sum by (job) (rate(http_requests_total{code=~"5..", job=~".*thanos-query.*", handler="query"}[5m]))/  sum by (job) (rate(http_requests_total{job=~".*thanos-query.*", handler="query"}[5m]))) * 100 > 5'
+                query: '(sum by (job) (rate(http_requests_total{code=~"5..", job=~".*thanos-query.*", handler="query"}[5m]))/  sum by (job) (rate(http_requests_total{job=~".*thanos-query.*", handler="query"}[5m]))) * 100 > 5 and sum by (job) (rate(http_requests_total{job=~".*thanos-query.*", handler="query"}[5m])) > 0'
                 severity: critical
                 for: 5m
               - name: Thanos Query Http Request Query Range Error Rate High
                 description: 'Thanos Query {{$labels.job}} is failing to handle {{$value | humanize}}% of "query_range" requests.'
-                query: '(sum by (job) (rate(http_requests_total{code=~"5..", job=~".*thanos-query.*", handler="query_range"}[5m]))/  sum by (job) (rate(http_requests_total{job=~".*thanos-query.*", handler="query_range"}[5m]))) * 100 > 5'
+                query: '(sum by (job) (rate(http_requests_total{code=~"5..", job=~".*thanos-query.*", handler="query_range"}[5m]))/  sum by (job) (rate(http_requests_total{job=~".*thanos-query.*", handler="query_range"}[5m]))) * 100 > 5 and sum by (job) (rate(http_requests_total{job=~".*thanos-query.*", handler="query_range"}[5m])) > 0'
                 severity: critical
                 for: 5m
               - name: Thanos Query Grpc Server Error Rate
                 description: "Thanos Query {{$labels.job}} is failing to handle {{$value | humanize}}% of requests."
-                query: '(sum by (job) (rate(grpc_server_handled_total{grpc_code=~"Unknown|ResourceExhausted|Internal|Unavailable|DataLoss|DeadlineExceeded", job=~".*thanos-query.*"}[5m]))/  sum by (job) (rate(grpc_server_started_total{job=~".*thanos-query.*"}[5m])) * 100 > 5)'
+                query: '(sum by (job) (rate(grpc_server_handled_total{grpc_code=~"Unknown|ResourceExhausted|Internal|Unavailable|DataLoss|DeadlineExceeded", job=~".*thanos-query.*"}[5m]))/  sum by (job) (rate(grpc_server_started_total{job=~".*thanos-query.*"}[5m])) * 100 > 5) and sum by (job) (rate(grpc_server_started_total{job=~".*thanos-query.*"}[5m])) > 0'
                 severity: warning
                 for: 5m
               - name: Thanos Query Grpc Client Error Rate
                 description: "Thanos Query {{$labels.job}} is failing to send {{$value | humanize}}% of requests."
-                query: '(sum by (job) (rate(grpc_client_handled_total{grpc_code!="OK", job=~".*thanos-query.*"}[5m])) / sum by (job) (rate(grpc_client_started_total{job=~".*thanos-query.*"}[5m]))) * 100 > 5'
+                query: '(sum by (job) (rate(grpc_client_handled_total{grpc_code!="OK", job=~".*thanos-query.*"}[5m])) / sum by (job) (rate(grpc_client_started_total{job=~".*thanos-query.*"}[5m]))) * 100 > 5 and sum by (job) (rate(grpc_client_started_total{job=~".*thanos-query.*"}[5m])) > 0'
                 severity: warning
                 for: 5m
               - name: Thanos Query High D N S Failures
                 description: "Thanos Query {{$labels.job}} have {{$value | humanize}}% of failing DNS queries for store endpoints."
-                query: '(sum by (job) (rate(thanos_query_store_apis_dns_failures_total{job=~".*thanos-query.*"}[5m])) / sum by (job) (rate(thanos_query_store_apis_dns_lookups_total{job=~".*thanos-query.*"}[5m]))) * 100 > 1'
+                query: '(sum by (job) (rate(thanos_query_store_apis_dns_failures_total{job=~".*thanos-query.*"}[5m])) / sum by (job) (rate(thanos_query_store_apis_dns_lookups_total{job=~".*thanos-query.*"}[5m]))) * 100 > 1 and sum by (job) (rate(thanos_query_store_apis_dns_lookups_total{job=~".*thanos-query.*"}[5m])) > 0'
                 severity: warning
                 for: 15m
               - name: Thanos Query Instant Latency High
@@ -4857,7 +4874,7 @@ groups:
             rules:
               - name: Thanos Receive Http Request Error Rate High
                 description: "Thanos Receive {{$labels.job}} is failing to handle {{$value | humanize}}% of requests."
-                query: '(sum by (job) (rate(http_requests_total{code=~"5..", job=~".*thanos-receive.*", handler="receive"}[5m]))/  sum by (job) (rate(http_requests_total{job=~".*thanos-receive.*", handler="receive"}[5m]))) * 100 > 5'
+                query: '(sum by (job) (rate(http_requests_total{code=~"5..", job=~".*thanos-receive.*", handler="receive"}[5m]))/  sum by (job) (rate(http_requests_total{job=~".*thanos-receive.*", handler="receive"}[5m]))) * 100 > 5 and sum by (job) (rate(http_requests_total{job=~".*thanos-receive.*", handler="receive"}[5m])) > 0'
                 severity: critical
                 for: 5m
               - name: Thanos Receive Http Request Latency High
@@ -4872,12 +4889,12 @@ groups:
                 for: 5m
               - name: Thanos Receive High Forward Request Failures
                 description: "Thanos Receive {{$labels.job}} is failing to forward {{$value | humanize}}% of requests."
-                query: '(sum by (job) (rate(thanos_receive_forward_requests_total{result="error", job=~".*thanos-receive.*"}[5m]))/  sum by (job) (rate(thanos_receive_forward_requests_total{job=~".*thanos-receive.*"}[5m]))) * 100 > 20'
+                query: '(sum by (job) (rate(thanos_receive_forward_requests_total{result="error", job=~".*thanos-receive.*"}[5m]))/  sum by (job) (rate(thanos_receive_forward_requests_total{job=~".*thanos-receive.*"}[5m]))) * 100 > 20 and sum by (job) (rate(thanos_receive_forward_requests_total{job=~".*thanos-receive.*"}[5m])) > 0'
                 severity: info
                 for: 5m
               - name: Thanos Receive High Hashring File Refresh Failures
                 description: "Thanos Receive {{$labels.job}} is failing to refresh hashring file, {{$value | humanize}} of attempts failed."
-                query: '(sum by (job) (rate(thanos_receive_hashrings_file_errors_total{job=~".*thanos-receive.*"}[5m])) / sum by (job) (rate(thanos_receive_hashrings_file_refreshes_total{job=~".*thanos-receive.*"}[5m])) > 0)'
+                query: '(sum by (job) (rate(thanos_receive_hashrings_file_errors_total{job=~".*thanos-receive.*"}[5m])) / sum by (job) (rate(thanos_receive_hashrings_file_refreshes_total{job=~".*thanos-receive.*"}[5m])) > 0) and sum by (job) (rate(thanos_receive_hashrings_file_refreshes_total{job=~".*thanos-receive.*"}[5m])) > 0'
                 severity: warning
                 for: 15m
               - name: Thanos Receive Config Reload Failure
@@ -4908,7 +4925,7 @@ groups:
             rules:
               - name: Thanos Store Grpc Error Rate
                 description: "Thanos Store {{$labels.job}} is failing to handle {{$value | humanize}}% of requests."
-                query: '(sum by (job) (rate(grpc_server_handled_total{grpc_code=~"Unknown|ResourceExhausted|Internal|Unavailable|DataLoss|DeadlineExceeded", job=~".*thanos-store.*"}[5m]))/  sum by (job) (rate(grpc_server_started_total{job=~".*thanos-store.*"}[5m])) * 100 > 5)'
+                query: '(sum by (job) (rate(grpc_server_handled_total{grpc_code=~"Unknown|ResourceExhausted|Internal|Unavailable|DataLoss|DeadlineExceeded", job=~".*thanos-store.*"}[5m]))/  sum by (job) (rate(grpc_server_started_total{job=~".*thanos-store.*"}[5m])) * 100 > 5) and sum by (job) (rate(grpc_server_started_total{job=~".*thanos-store.*"}[5m])) > 0'
                 severity: warning
                 for: 5m
               - name: Thanos Store Series Gate Latency High
@@ -4918,7 +4935,7 @@ groups:
                 for: 10m
               - name: Thanos Store Bucket High Operation Failures
                 description: "Thanos Store {{$labels.job}} Bucket is failing to execute {{$value | humanize}}% of operations."
-                query: '(sum by (job) (rate(thanos_objstore_bucket_operation_failures_total{job=~".*thanos-store.*"}[5m])) / sum by (job) (rate(thanos_objstore_bucket_operations_total{job=~".*thanos-store.*"}[5m])) * 100 > 5)'
+                query: '(sum by (job) (rate(thanos_objstore_bucket_operation_failures_total{job=~".*thanos-store.*"}[5m])) / sum by (job) (rate(thanos_objstore_bucket_operations_total{job=~".*thanos-store.*"}[5m])) * 100 > 5) and sum by (job) (rate(thanos_objstore_bucket_operations_total{job=~".*thanos-store.*"}[5m])) > 0'
                 severity: warning
                 for: 15m
               - name: Thanos Store Objstore Operation Latency High
@@ -4941,7 +4958,7 @@ groups:
                 for: 5m
               - name: Thanos Rule High Rule Evaluation Failures
                 description: "Thanos Rule {{$labels.instance}} is failing to evaluate rules."
-                query: '(sum by (job, instance) (rate(prometheus_rule_evaluation_failures_total{job=~".*thanos-rule.*"}[5m])) / sum by (job, instance) (rate(prometheus_rule_evaluations_total{job=~".*thanos-rule.*"}[5m])) * 100 > 5)'
+                query: '(sum by (job, instance) (rate(prometheus_rule_evaluation_failures_total{job=~".*thanos-rule.*"}[5m])) / sum by (job, instance) (rate(prometheus_rule_evaluations_total{job=~".*thanos-rule.*"}[5m])) * 100 > 5) and sum by (job, instance) (rate(prometheus_rule_evaluations_total{job=~".*thanos-rule.*"}[5m])) > 0'
                 severity: critical
                 for: 5m
               - name: Thanos Rule High Rule Evaluation Warnings
@@ -4956,7 +4973,7 @@ groups:
                 for: 5m
               - name: Thanos Rule Grpc Error Rate
                 description: "Thanos Rule {{$labels.job}} is failing to handle {{$value | humanize}}% of requests."
-                query: '(sum by (job, instance) (rate(grpc_server_handled_total{grpc_code=~"Unknown|ResourceExhausted|Internal|Unavailable|DataLoss|DeadlineExceeded", job=~".*thanos-rule.*"}[5m]))/  sum by (job, instance) (rate(grpc_server_started_total{job=~".*thanos-rule.*"}[5m])) * 100 > 5)'
+                query: '(sum by (job, instance) (rate(grpc_server_handled_total{grpc_code=~"Unknown|ResourceExhausted|Internal|Unavailable|DataLoss|DeadlineExceeded", job=~".*thanos-rule.*"}[5m]))/  sum by (job, instance) (rate(grpc_server_started_total{job=~".*thanos-rule.*"}[5m])) * 100 > 5) and sum by (job, instance) (rate(grpc_server_started_total{job=~".*thanos-rule.*"}[5m])) > 0'
                 severity: warning
                 for: 5m
               - name: Thanos Rule Config Reload Failure
@@ -4966,12 +4983,12 @@ groups:
                 for: 5m
               - name: Thanos Rule Query High D N S Failures
                 description: "Thanos Rule {{$labels.job}} has {{$value | humanize}}% of failing DNS queries for query endpoints."
-                query: '(sum by (job, instance) (rate(thanos_rule_query_apis_dns_failures_total{job=~".*thanos-rule.*"}[5m])) / sum by (job, instance) (rate(thanos_rule_query_apis_dns_lookups_total{job=~".*thanos-rule.*"}[5m])) * 100 > 1)'
+                query: '(sum by (job, instance) (rate(thanos_rule_query_apis_dns_failures_total{job=~".*thanos-rule.*"}[5m])) / sum by (job, instance) (rate(thanos_rule_query_apis_dns_lookups_total{job=~".*thanos-rule.*"}[5m])) * 100 > 1) and sum by (job, instance) (rate(thanos_rule_query_apis_dns_lookups_total{job=~".*thanos-rule.*"}[5m])) > 0'
                 severity: warning
                 for: 15m
               - name: Thanos Rule Alertmanager High D N S Failures
                 description: "Thanos Rule {{$labels.instance}} has {{$value | humanize}}% of failing DNS queries for Alertmanager endpoints."
-                query: '(sum by (job, instance) (rate(thanos_rule_alertmanagers_dns_failures_total{job=~".*thanos-rule.*"}[5m])) / sum by (job, instance) (rate(thanos_rule_alertmanagers_dns_lookups_total{job=~".*thanos-rule.*"}[5m])) * 100 > 1)'
+                query: '(sum by (job, instance) (rate(thanos_rule_alertmanagers_dns_failures_total{job=~".*thanos-rule.*"}[5m])) / sum by (job, instance) (rate(thanos_rule_alertmanagers_dns_lookups_total{job=~".*thanos-rule.*"}[5m])) * 100 > 1) and sum by (job, instance) (rate(thanos_rule_alertmanagers_dns_lookups_total{job=~".*thanos-rule.*"}[5m])) > 0'
                 severity: warning
                 for: 15m
               - name: Thanos Rule No Evaluation For10 Intervals
@@ -4989,7 +5006,7 @@ groups:
             rules:
               - name: Thanos Bucket Replicate Error Rate
                 description: "Thanos Replicate is failing to run, {{$value | humanize}}% of attempts failed."
-                query: '(sum by (job) (rate(thanos_replicate_replication_runs_total{result="error", job=~".*thanos-bucket-replicate.*"}[5m]))/ on (job) group_left  sum by (job) (rate(thanos_replicate_replication_runs_total{job=~".*thanos-bucket-replicate.*"}[5m]))) * 100 >= 10'
+                query: '(sum by (job) (rate(thanos_replicate_replication_runs_total{result="error", job=~".*thanos-bucket-replicate.*"}[5m])) / on (job) group_left sum by (job) (rate(thanos_replicate_replication_runs_total{job=~".*thanos-bucket-replicate.*"}[5m]))) * 100 >= 10 and sum by (job) (rate(thanos_replicate_replication_runs_total{job=~".*thanos-bucket-replicate.*"}[5m])) > 0'
                 severity: critical
                 for: 5m
               - name: Thanos Bucket Replicate Run Latency
@@ -5042,7 +5059,7 @@ groups:
                 severity: warning
               - name: Loki request errors
                 description: The {{ $labels.job }} and {{ $labels.route }} are experiencing errors
-                query: '100 * sum(rate(loki_request_duration_seconds_count{status_code=~"5.."}[1m])) by (namespace, job, route) / sum(rate(loki_request_duration_seconds_count[1m])) by (namespace, job, route) > 10'
+                query: '100 * sum(rate(loki_request_duration_seconds_count{status_code=~"5.."}[1m])) by (namespace, job, route) / sum(rate(loki_request_duration_seconds_count[1m])) by (namespace, job, route) > 10 and sum(rate(loki_request_duration_seconds_count[1m])) by (namespace, job, route) > 0'
                 severity: critical
                 for: 15m
               - name: Loki request panic
@@ -5062,7 +5079,7 @@ groups:
             rules:
               - name: Promtail request errors
                 description: The {{ $labels.job }} {{ $labels.route }} is experiencing {{ printf "%.2f" $value }}% errors.
-                query: '100 * sum(rate(promtail_request_duration_seconds_count{status_code=~"5..|failed"}[1m])) by (namespace, job, route, instance) / sum(rate(promtail_request_duration_seconds_count[1m])) by (namespace, job, route, instance) > 10'
+                query: '100 * sum(rate(promtail_request_duration_seconds_count{status_code=~"5..|failed"}[1m])) by (namespace, job, route, instance) / sum(rate(promtail_request_duration_seconds_count[1m])) by (namespace, job, route, instance) > 10 and sum(rate(promtail_request_duration_seconds_count[1m])) by (namespace, job, route, instance) > 0'
                 severity: critical
                 for: 5m
               - name: Promtail request latency
@@ -5085,11 +5102,15 @@ groups:
                 severity: critical
               - name: Cortex notification are being dropped
                 description: Cortex notification are being dropped due to errors (instance {{ $labels.instance }})
-                query: rate(cortex_prometheus_notifications_dropped_total[5m]) > 0
+                query: rate(cortex_prometheus_notifications_dropped_total[5m]) > 0.05
+                comments: |
+                  Threshold of 0.05/s avoids firing on transient single-event spikes.
                 severity: critical
               - name: Cortex notification error
                 description: Cortex is failing when sending alert notifications (instance {{ $labels.instance }})
-                query: rate(cortex_prometheus_notifications_errors_total[5m]) > 0
+                query: rate(cortex_prometheus_notifications_errors_total[5m]) > 0.05
+                comments: |
+                  Threshold of 0.05/s avoids firing on transient single-event spikes.
                 severity: critical
               - name: Cortex ingester unhealthy
                 description: Cortex has an unhealthy ingester
@@ -5151,7 +5172,7 @@ groups:
                   Threshold of 600s (10 minutes). Adjust based on your tenant index build interval.
               - name: Tempo block list rising quickly
                 description: Tempo blocklist length is up {{ printf "%.0f" $value }}% over the last 7 days. Consider scaling compactors.
-                query: (avg(tempodb_blocklist_length) / avg(tempodb_blocklist_length offset 7d) - 1) * 100 > 40
+                query: (avg(tempodb_blocklist_length) / avg(tempodb_blocklist_length offset 7d) - 1) * 100 > 40 and avg(tempodb_blocklist_length offset 7d) > 0
                 severity: critical
                 for: 15m
                 comments: |
@@ -5191,7 +5212,7 @@ groups:
                 for: 15m
               - name: Tempo metrics generator service graphs dropping spans
                 description: Tempo metrics generator is dropping {{ printf "%.2f" $value }}% of spans in service graphs for {{ $labels.job }}.
-                query: '100 * sum by (job) (rate(tempo_metrics_generator_processor_service_graphs_dropped_spans[5m])) / sum by (job) (rate(tempo_metrics_generator_spans_received_total[5m])) > 0.5'
+                query: '100 * sum by (job) (rate(tempo_metrics_generator_processor_service_graphs_dropped_spans[5m])) / sum by (job) (rate(tempo_metrics_generator_spans_received_total[5m])) > 0.5 and sum by (job) (rate(tempo_metrics_generator_spans_received_total[5m])) > 0'
                 severity: warning
                 for: 15m
               - name: Tempo metrics generator collections failing
@@ -5201,7 +5222,7 @@ groups:
                 for: 5m
               - name: Tempo memcached errors elevated
                 description: 'Tempo memcached error rate is {{ printf "%.2f" $value }}% for {{ $labels.name }} in {{ $labels.job }}.'
-                query: '100 * sum by (name, job) (rate(tempo_memcache_request_duration_seconds_count{status_code="500"}[5m])) / sum by (name, job) (rate(tempo_memcache_request_duration_seconds_count[5m])) > 20'
+                query: '100 * sum by (name, job) (rate(tempo_memcache_request_duration_seconds_count{status_code="500"}[5m])) / sum by (name, job) (rate(tempo_memcache_request_duration_seconds_count[5m])) > 20 and sum by (name, job) (rate(tempo_memcache_request_duration_seconds_count[5m])) > 0'
                 severity: warning
                 for: 10m
                 comments: |
@@ -5223,7 +5244,7 @@ groups:
                 for: 15m
               - name: Mimir request errors
                 description: 'Mimir {{ $labels.job }} {{ $labels.route }} is experiencing {{ printf "%.2f" $value }}% errors.'
-                query: '100 * sum by (job, route) (rate(cortex_request_duration_seconds_count{status_code=~"5..", route!~"ready|debug_pprof"}[5m])) / sum by (job, route) (rate(cortex_request_duration_seconds_count{route!~"ready|debug_pprof"}[5m])) > 1'
+                query: '100 * sum by (job, route) (rate(cortex_request_duration_seconds_count{status_code=~"5..", route!~"ready|debug_pprof"}[5m])) / sum by (job, route) (rate(cortex_request_duration_seconds_count{route!~"ready|debug_pprof"}[5m])) > 1 and sum by (job, route) (rate(cortex_request_duration_seconds_count{route!~"ready|debug_pprof"}[5m])) > 0'
                 severity: critical
                 for: 15m
               - name: Mimir inconsistent runtime config
@@ -5243,17 +5264,17 @@ groups:
                 for: 7m
               - name: Mimir cache request errors
                 description: 'Mimir cache {{ $labels.name }} is experiencing {{ printf "%.2f" $value }}% errors for {{ $labels.operation }} operation.'
-                query: '(sum by (name, operation, job) (rate(thanos_cache_operation_failures_total[5m])) / sum by (name, operation, job) (rate(thanos_cache_operations_total[5m]))) * 100 > 5'
+                query: '(sum by (name, operation, job) (rate(thanos_cache_operation_failures_total[5m])) / sum by (name, operation, job) (rate(thanos_cache_operations_total[5m]))) * 100 > 5 and sum by (name, operation, job) (rate(thanos_cache_operations_total[5m])) > 0'
                 severity: warning
                 for: 5m
               - name: Mimir KV store failure
                 description: 'Mimir {{ $labels.job }} KV store {{ $labels.kv_name }} is failing with 100% error rate.'
-                query: '(sum by (job, kv_name) (rate(cortex_kv_request_duration_seconds_count{status_code!~"2.."}[5m])) / sum by (job, kv_name) (rate(cortex_kv_request_duration_seconds_count[5m]))) == 1'
+                query: '(sum by (job, kv_name) (rate(cortex_kv_request_duration_seconds_count{status_code!~"2.."}[5m])) / sum by (job, kv_name) (rate(cortex_kv_request_duration_seconds_count[5m]))) == 1 and sum by (job, kv_name) (rate(cortex_kv_request_duration_seconds_count[5m])) > 0'
                 severity: critical
                 for: 5m
               - name: Mimir memory map areas too high
                 description: 'Mimir {{ $labels.job }} is using {{ printf "%.0f" $value }}% of its memory map area limit.'
-                query: 'process_memory_map_areas{job=~".*(ingester|cortex|mimir|store-gateway).*"} / process_memory_map_areas_limit{job=~".*(ingester|cortex|mimir|store-gateway).*"} * 100 > 80'
+                query: 'process_memory_map_areas{job=~".*(ingester|cortex|mimir|store-gateway).*"} / process_memory_map_areas_limit{job=~".*(ingester|cortex|mimir|store-gateway).*"} * 100 > 80 and process_memory_map_areas_limit{job=~".*(ingester|cortex|mimir|store-gateway).*"} > 0'
                 severity: critical
                 for: 5m
               - name: Mimir ingester instance has no tenants
@@ -5389,17 +5410,17 @@ groups:
               # Ruler
               - name: Mimir ruler too many failed pushes
                 description: 'Mimir ruler {{ $labels.instance }} is failing to push {{ printf "%.2f" $value }}% of write requests.'
-                query: '100 * sum by (instance, job) (rate(cortex_ruler_write_requests_failed_total[5m])) / sum by (instance, job) (rate(cortex_ruler_write_requests_total[5m])) > 1'
+                query: '100 * sum by (instance, job) (rate(cortex_ruler_write_requests_failed_total[5m])) / sum by (instance, job) (rate(cortex_ruler_write_requests_total[5m])) > 1 and sum by (instance, job) (rate(cortex_ruler_write_requests_total[5m])) > 0'
                 severity: critical
                 for: 5m
               - name: Mimir ruler too many failed queries
                 description: 'Mimir ruler {{ $labels.instance }} is failing {{ printf "%.2f" $value }}% of query evaluations.'
-                query: '100 * sum by (instance, job) (rate(cortex_ruler_queries_failed_total[5m])) / sum by (instance, job) (rate(cortex_ruler_queries_total[5m])) > 1'
+                query: '100 * sum by (instance, job) (rate(cortex_ruler_queries_failed_total[5m])) / sum by (instance, job) (rate(cortex_ruler_queries_total[5m])) > 1 and sum by (instance, job) (rate(cortex_ruler_queries_total[5m])) > 0'
                 severity: critical
                 for: 5m
               - name: Mimir ruler missed evaluations
                 description: 'Mimir ruler {{ $labels.instance }} is missing {{ printf "%.2f" $value }}% of rule group evaluations.'
-                query: '100 * sum by (instance, job) (rate(cortex_prometheus_rule_group_iterations_missed_total[5m])) / sum by (instance, job) (rate(cortex_prometheus_rule_group_iterations_total[5m])) > 1'
+                query: '100 * sum by (instance, job) (rate(cortex_prometheus_rule_group_iterations_missed_total[5m])) / sum by (instance, job) (rate(cortex_prometheus_rule_group_iterations_total[5m])) > 1 and sum by (instance, job) (rate(cortex_prometheus_rule_group_iterations_total[5m])) > 0'
                 severity: warning
                 for: 5m
               - name: Mimir ruler failed ring check
@@ -5554,42 +5575,42 @@ groups:
             rules:
               - name: Jaeger agent HTTP server errors
                 description: "Jaeger agent on {{ $labels.instance }} is experiencing {{ $value | humanize }}% HTTP server errors."
-                query: '100 * sum(rate(jaeger_agent_http_server_errors_total[1m])) by (instance, job, namespace) / sum(rate(jaeger_agent_http_server_total[1m])) by (instance, job, namespace) > 1'
+                query: '100 * sum(rate(jaeger_agent_http_server_errors_total[1m])) by (instance, job, namespace) / sum(rate(jaeger_agent_http_server_total[1m])) by (instance, job, namespace) > 1 and sum(rate(jaeger_agent_http_server_total[1m])) by (instance, job, namespace) > 0'
                 severity: warning
                 for: 15m
               - name: Jaeger client RPC request errors
                 description: "Jaeger client on {{ $labels.instance }} is experiencing {{ $value | humanize }}% RPC HTTP errors."
-                query: '100 * sum(rate(jaeger_client_jaeger_rpc_http_requests{status_code=~"4xx|5xx"}[1m])) by (instance, job, namespace) / sum(rate(jaeger_client_jaeger_rpc_http_requests[1m])) by (instance, job, namespace) > 1'
+                query: '100 * sum(rate(jaeger_client_jaeger_rpc_http_requests{status_code=~"4xx|5xx"}[1m])) by (instance, job, namespace) / sum(rate(jaeger_client_jaeger_rpc_http_requests[1m])) by (instance, job, namespace) > 1 and sum(rate(jaeger_client_jaeger_rpc_http_requests[1m])) by (instance, job, namespace) > 0'
                 severity: warning
                 for: 15m
               - name: Jaeger client spans dropped
                 description: "Jaeger client on {{ $labels.instance }} is dropping {{ $value | humanize }}% of spans."
-                query: '100 * sum(rate(jaeger_reporter_spans{result=~"dropped|err"}[1m])) by (instance, job, namespace) / sum(rate(jaeger_reporter_spans[1m])) by (instance, job, namespace) > 1'
+                query: '100 * sum(rate(jaeger_reporter_spans{result=~"dropped|err"}[1m])) by (instance, job, namespace) / sum(rate(jaeger_reporter_spans[1m])) by (instance, job, namespace) > 1 and sum(rate(jaeger_reporter_spans[1m])) by (instance, job, namespace) > 0'
                 severity: warning
                 for: 15m
               - name: Jaeger agent spans dropped
                 description: "Jaeger agent on {{ $labels.instance }} is dropping {{ $value | humanize }}% of span batches."
-                query: '100 * sum(rate(jaeger_agent_reporter_batches_failures_total[1m])) by (instance, job, namespace) / sum(rate(jaeger_agent_reporter_batches_submitted_total[1m])) by (instance, job, namespace) > 1'
+                query: '100 * sum(rate(jaeger_agent_reporter_batches_failures_total[1m])) by (instance, job, namespace) / sum(rate(jaeger_agent_reporter_batches_submitted_total[1m])) by (instance, job, namespace) > 1 and sum(rate(jaeger_agent_reporter_batches_submitted_total[1m])) by (instance, job, namespace) > 0'
                 severity: warning
                 for: 15m
               - name: Jaeger collector dropping spans
                 description: "Jaeger collector on {{ $labels.instance }} is dropping {{ $value | humanize }}% of spans."
-                query: '100 * sum(rate(jaeger_collector_spans_dropped_total[1m])) by (instance, job, namespace) / sum(rate(jaeger_collector_spans_received_total[1m])) by (instance, job, namespace) > 1'
+                query: '100 * sum(rate(jaeger_collector_spans_dropped_total[1m])) by (instance, job, namespace) / sum(rate(jaeger_collector_spans_received_total[1m])) by (instance, job, namespace) > 1 and sum(rate(jaeger_collector_spans_received_total[1m])) by (instance, job, namespace) > 0'
                 severity: warning
                 for: 15m
               - name: Jaeger sampling update failing
                 description: "Jaeger on {{ $labels.instance }} is failing {{ $value | humanize }}% of sampling policy updates."
-                query: '100 * sum(rate(jaeger_sampler_queries{result="err"}[1m])) by (instance, job, namespace) / sum(rate(jaeger_sampler_queries[1m])) by (instance, job, namespace) > 1'
+                query: '100 * sum(rate(jaeger_sampler_queries{result="err"}[1m])) by (instance, job, namespace) / sum(rate(jaeger_sampler_queries[1m])) by (instance, job, namespace) > 1 and sum(rate(jaeger_sampler_queries[1m])) by (instance, job, namespace) > 0'
                 severity: warning
                 for: 15m
               - name: Jaeger throttling update failing
                 description: "Jaeger on {{ $labels.instance }} is failing {{ $value | humanize }}% of throttling policy updates."
-                query: '100 * sum(rate(jaeger_throttler_updates{result="err"}[1m])) by (instance, job, namespace) / sum(rate(jaeger_throttler_updates[1m])) by (instance, job, namespace) > 1'
+                query: '100 * sum(rate(jaeger_throttler_updates{result="err"}[1m])) by (instance, job, namespace) / sum(rate(jaeger_throttler_updates[1m])) by (instance, job, namespace) > 1 and sum(rate(jaeger_throttler_updates[1m])) by (instance, job, namespace) > 0'
                 severity: warning
                 for: 15m
               - name: Jaeger query request failures
                 description: "Jaeger query on {{ $labels.instance }} is failing {{ $value | humanize }}% of requests."
-                query: '100 * sum(rate(jaeger_query_requests_total{result="err"}[1m])) by (instance, job, namespace) / sum(rate(jaeger_query_requests_total[1m])) by (instance, job, namespace) > 1'
+                query: '100 * sum(rate(jaeger_query_requests_total{result="err"}[1m])) by (instance, job, namespace) / sum(rate(jaeger_query_requests_total[1m])) by (instance, job, namespace) > 1 and sum(rate(jaeger_query_requests_total[1m])) by (instance, job, namespace) > 0'
                 severity: warning
                 for: 15m
 
