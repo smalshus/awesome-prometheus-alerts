@@ -66,6 +66,7 @@ Collection available here: **[https://samber.github.io/awesome-prometheus-alerts
 - [Memcached](https://samber.github.io/awesome-prometheus-alerts/rules#memcached)
 - [MongoDB](https://samber.github.io/awesome-prometheus-alerts/rules#mongodb)
 - [Elasticsearch](https://samber.github.io/awesome-prometheus-alerts/rules#elasticsearch)
+- [OpenSearch](https://samber.github.io/awesome-prometheus-alerts/rules#opensearch)
 - [Meilisearch](https://samber.github.io/awesome-prometheus-alerts/rules#meilisearch)
 - [Cassandra](https://samber.github.io/awesome-prometheus-alerts/rules#cassandra)
 - [Clickhouse](https://samber.github.io/awesome-prometheus-alerts/rules#clickhouse)
