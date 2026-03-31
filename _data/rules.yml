@@ -1496,6 +1496,43 @@ groups:
                 severity: warning
                 for: 5m
 
+      - name: OpenSearch
+        exporters:
+          - name: opensearch-project/opensearch-prometheus-exporter
+            slug: opensearch-project-opensearch-prometheus-exporter
+            doc_url: https://github.com/opensearch-project/opensearch-prometheus-exporter
+            rules:
+              - name: OpenSearch is unhealthy
+                description: "OpenSearch cluster {{ $labels.cluster }} is unhealthy"
+                query: "opensearch_cluster_status != 0"
+                severity: critical
+              - name: OpenSearch high heap usage
+                description: "OpenSearch heap usage on cluster {{ $labels.cluster }} is too high"
+                query: opensearch_jvm_mem_heap_used_percent > 90
+                severity: warning
+                for: 5m
+              - name: OpenSearch circuitbreaker tripped
+                description: "The circuitbreaker on OpenSearch cluster {{ $labels.cluster }} has tripped to prevent Java OutOfMemoryError"
+                query: "opensearch_circuitbreaker_tripped_count > 0"
+                severity: warning
+                for: 5m
+              - name: OpenSearch has pending tasks
+                query: "opensearch_cluster_pending_tasks_number > 0"
+                description: "OpenSearch cluster {{ $labels.cluster }} has pending tasks"
+                severity: warning
+                for: 5m
+              - name: OpenSearch indexing is throttled
+                description: "Indexing on OpenSearch cluster {{ $labels.cluster }} is throttled"
+                query: "opensearch_indices_indexing_is_throttled_bool > 0"
+                severity: warning
+                for: 5m
+              - name: OpenSearch has inactive shards
+                description: "OpenSearch cluster {{ $labels.cluster }} has inactive shards"
+                query: "opensearch_cluster_shards_active_percent < 100.0"
+                severity: warning
+                for: 5m
+
+
       - name: Meilisearch
         exporters:
           - name: Embedded exporter
