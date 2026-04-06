@@ -24,19 +24,19 @@ groups:
         description: "The {{ $labels.job }} and {{ $labels.route }} are experiencing {{ printf \"%.2f\" $value }}% errors.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: LokiRequestPanic
-      expr: 'sum(increase(loki_panic_total[10m])) by (namespace, job) > 0'
-      for: 5m
+      expr: 'sum(increase(loki_panic_total[5m])) by (namespace, job) > 0'
+      for: 0m
       labels:
         severity: critical
       annotations:
         summary: Loki request panic (instance {{ $labels.instance }})
-        description: "The {{ $labels.job }} is experiencing {{ printf \"%.2f\" $value }}% increase of panics\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+        description: "{{ $labels.job }} is experiencing {{ $value | humanize }} panic(s) in the last 5 minutes.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: LokiRequestLatency
-      expr: '(histogram_quantile(0.99, sum(rate(loki_request_duration_seconds_bucket{route!~"(?i).*tail.*"}[5m])) by (le)))  > 1'
+      expr: 'histogram_quantile(0.99, sum(rate(loki_request_duration_seconds_bucket{route!~"(?i).*tail.*"}[5m])) by (namespace, job, route, le)) > 1'
       for: 5m
       labels:
         severity: critical
       annotations:
         summary: Loki request latency (instance {{ $labels.instance }})
-        description: "The {{ $labels.job }} {{ $labels.route }} is experiencing {{ printf \"%.2f\" $value }}s 99th percentile latency\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+        description: "The {{ $labels.job }} {{ $labels.route }} is experiencing {{ printf \"%.2f\" $value }}s 99th percentile latency.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"

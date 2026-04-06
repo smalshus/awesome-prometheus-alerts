@@ -117,7 +117,7 @@ groups:
         summary: Tempo compaction too many outstanding blocks warning (instance {{ $labels.instance }})
         description: "There are too many outstanding compaction blocks for {{ $labels.instance }}. Consider increasing compactor resources.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
-    # Official Tempo mixin normalizes by backend-worker count. Adjust threshold based on your compactor configuration.
+    # Threshold of 100 blocks per compactor instance. Normalize by backend-worker count if needed. Adjust based on your environment.
     - alert: TempoCompactionTooManyOutstandingBlocksCritical
       expr: 'sum by (instance) (tempodb_compaction_outstanding_blocks) > 250'
       for: 24h
@@ -127,8 +127,9 @@ groups:
         summary: Tempo compaction too many outstanding blocks critical (instance {{ $labels.instance }})
         description: "There are too many outstanding compaction blocks for {{ $labels.instance }}. Increase compactor resources immediately.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
+    # Threshold of 0.05/s avoids firing on transient single-event spikes.
     - alert: TempoDistributorUsageTrackerErrors
-      expr: 'sum by (job, reason) (rate(tempo_distributor_usage_tracker_errors_total[5m])) > 0'
+      expr: 'sum by (job, reason) (rate(tempo_distributor_usage_tracker_errors_total[5m])) > 0.05'
       for: 30m
       labels:
         severity: critical
@@ -137,7 +138,7 @@ groups:
         description: "Tempo distributor usage tracker errors for {{ $labels.job }} at {{ $value | humanize }}/s (reason {{ $labels.reason }}).\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: TempoMetricsGeneratorProcessorUpdatesFailing
-      expr: 'sum by (job) (increase(tempo_metrics_generator_active_processors_update_failed_total[5m])) > 0'
+      expr: 'sum by (job) (increase(tempo_metrics_generator_active_processors_update_failed_total[5m])) > 2'
       for: 15m
       labels:
         severity: critical
@@ -146,7 +147,7 @@ groups:
         description: "Tempo metrics generator processor updates are failing for {{ $labels.job }} ({{ $value }} failures in 5m).\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: TempoMetricsGeneratorServiceGraphsDroppingSpans
-      expr: '100 * sum by (job) (rate(tempo_metrics_generator_processor_service_graphs_dropped_spans[5m])) / sum by (job) (rate(tempo_metrics_generator_spans_received_total[5m])) > 0.5 and sum by (job) (rate(tempo_metrics_generator_spans_received_total[5m])) > 0'
+      expr: '100 * sum by (job) (rate(tempo_metrics_generator_processor_service_graphs_dropped_spans_total[5m])) / sum by (job) (rate(tempo_metrics_generator_spans_received_total[5m])) > 0.5 and sum by (job) (rate(tempo_metrics_generator_spans_received_total[5m])) > 0'
       for: 15m
       labels:
         severity: warning

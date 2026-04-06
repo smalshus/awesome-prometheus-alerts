@@ -23,7 +23,7 @@ groups:
         severity: critical
       annotations:
         summary: RabbitMQ node not distributed (instance {{ $labels.instance }})
-        description: "Distribution link state is not 'up'\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+        description: "Distribution link to peer {{ $labels.peer }} is not 'up' (state {{ $value }})\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: RabbitmqInstancesDifferentVersions
       expr: 'count(count(rabbitmq_build_info) by (rabbitmq_version)) > 1'
@@ -59,7 +59,7 @@ groups:
         severity: warning
       annotations:
         summary: RabbitMQ too many ready messages (instance {{ $labels.instance }})
-        description: "RabbitMQ too many ready messages on {{ $labels.instance }}\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+        description: "RabbitMQ too many ready messages on queue {{ $labels.queue }} ({{ $value }})\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: RabbitmqTooManyUnackMessages
       expr: 'sum(rabbitmq_queue_messages_unacked) BY (queue) > 1000'
@@ -68,7 +68,7 @@ groups:
         severity: warning
       annotations:
         summary: RabbitMQ too many unack messages (instance {{ $labels.instance }})
-        description: "Too many unacknowledged messages\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+        description: "Too many unacknowledged messages on queue {{ $labels.queue }} ({{ $value }})\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: RabbitmqTooManyConnections
       expr: 'rabbitmq_connections > 1000'
@@ -88,11 +88,12 @@ groups:
         summary: RabbitMQ no queue consumer (instance {{ $labels.instance }})
         description: "A queue has less than 1 consumer\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
+    # Threshold of 3 avoids noise from occasional misroutes. Adjust based on your expected traffic patterns.
     - alert: RabbitmqUnroutableMessages
-      expr: 'increase(rabbitmq_channel_messages_unroutable_returned_total[1m]) > 0 or increase(rabbitmq_channel_messages_unroutable_dropped_total[1m]) > 0'
+      expr: 'increase(rabbitmq_channel_messages_unroutable_returned_total[5m]) > 3 or increase(rabbitmq_channel_messages_unroutable_dropped_total[5m]) > 3'
       for: 2m
       labels:
         severity: warning
       annotations:
         summary: RabbitMQ unroutable messages (instance {{ $labels.instance }})
-        description: "A queue has unroutable messages ({{ $value }} in the last 1m)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+        description: "A queue has unroutable messages ({{ $value }} in the last 5m)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"

@@ -178,8 +178,9 @@ groups:
         summary: Mimir distributor inflight requests high (instance {{ $labels.instance }})
         description: "Mimir distributor {{ $labels.instance }} is using {{ printf \"%.0f\" $value }}% of its inflight push requests limit.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
+    # Threshold of 0.05/s avoids firing on transient single-event spikes.
     - alert: MimirIngesterTsdbHeadCompactionFailed
-      expr: 'rate(cortex_ingester_tsdb_compactions_failed_total[5m]) > 0'
+      expr: 'rate(cortex_ingester_tsdb_compactions_failed_total[5m]) > 0.05'
       for: 15m
       labels:
         severity: critical
@@ -187,26 +188,29 @@ groups:
         summary: Mimir ingester TSDB head compaction failed (instance {{ $labels.instance }})
         description: "Mimir ingester {{ $labels.instance }} is failing to compact TSDB head ({{ $value | humanize }}/s).\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
+    # Threshold of 0.05/s avoids firing on transient single-event spikes.
     - alert: MimirIngesterTsdbHeadTruncationFailed
-      expr: 'rate(cortex_ingester_tsdb_head_truncations_failed_total[5m]) > 0'
-      for: 0m
+      expr: 'rate(cortex_ingester_tsdb_head_truncations_failed_total[5m]) > 0.05'
+      for: 15m
       labels:
         severity: critical
       annotations:
         summary: Mimir ingester TSDB head truncation failed (instance {{ $labels.instance }})
         description: "Mimir ingester {{ $labels.instance }} is failing to truncate TSDB head ({{ $value | humanize }}/s).\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
+    # Threshold of 0.05/s avoids firing on transient single-event spikes.
     - alert: MimirIngesterTsdbCheckpointCreationFailed
-      expr: 'rate(cortex_ingester_tsdb_checkpoint_creations_failed_total[5m]) > 0'
-      for: 0m
+      expr: 'rate(cortex_ingester_tsdb_checkpoint_creations_failed_total[5m]) > 0.05'
+      for: 15m
       labels:
         severity: critical
       annotations:
         summary: Mimir ingester TSDB checkpoint creation failed (instance {{ $labels.instance }})
         description: "Mimir ingester {{ $labels.instance }} is failing to create TSDB checkpoints ({{ $value | humanize }}/s).\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
+    # Threshold of 0.05/s avoids firing on transient single-event spikes.
     - alert: MimirIngesterTsdbCheckpointDeletionFailed
-      expr: 'rate(cortex_ingester_tsdb_checkpoint_deletions_failed_total[5m]) > 0'
+      expr: 'rate(cortex_ingester_tsdb_checkpoint_deletions_failed_total[5m]) > 0.05'
       for: 0m
       labels:
         severity: critical
@@ -214,8 +218,9 @@ groups:
         summary: Mimir ingester TSDB checkpoint deletion failed (instance {{ $labels.instance }})
         description: "Mimir ingester {{ $labels.instance }} is failing to delete TSDB checkpoints ({{ $value | humanize }}/s).\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
+    # Threshold of 0.05/s avoids firing on transient single-event spikes.
     - alert: MimirIngesterTsdbWalTruncationFailed
-      expr: 'rate(cortex_ingester_tsdb_wal_truncations_failed_total[5m]) > 0'
+      expr: 'rate(cortex_ingester_tsdb_wal_truncations_failed_total[5m]) > 0.05'
       for: 0m
       labels:
         severity: warning
@@ -223,8 +228,9 @@ groups:
         summary: Mimir ingester TSDB WAL truncation failed (instance {{ $labels.instance }})
         description: "Mimir ingester {{ $labels.instance }} is failing to truncate TSDB WAL ({{ $value | humanize }}/s).\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
+    # Threshold of 0.05/s avoids firing on transient single-event spikes.
     - alert: MimirIngesterTsdbWalWritesFailed
-      expr: 'rate(cortex_ingester_tsdb_wal_writes_failed_total[1m]) > 0'
+      expr: 'rate(cortex_ingester_tsdb_wal_writes_failed_total[1m]) > 0.05'
       for: 3m
       labels:
         severity: critical
@@ -232,7 +238,7 @@ groups:
         summary: Mimir ingester TSDB WAL writes failed (instance {{ $labels.instance }})
         description: "Mimir ingester {{ $labels.instance }} is failing to write to TSDB WAL ({{ $value | humanize }}/s).\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
-    # Threshold aligned with official Mimir mixin (30 minutes).
+    # Threshold of 30 minutes. Adjust based on your sync interval.
     - alert: MimirStoreGatewayHasNotSyncedBucket
       expr: '(time() - cortex_bucket_stores_blocks_last_successful_sync_timestamp_seconds{component="store-gateway"} > 1800) and cortex_bucket_stores_blocks_last_successful_sync_timestamp_seconds{component="store-gateway"} > 0'
       for: 5m
@@ -240,7 +246,7 @@ groups:
         severity: critical
       annotations:
         summary: Mimir store gateway has not synced bucket (instance {{ $labels.instance }})
-        description: "Mimir store-gateway {{ $labels.instance }} has not synced the bucket for more than 10 minutes.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+        description: "Mimir store-gateway {{ $labels.instance }} has not synced the bucket for more than 30 minutes.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: MimirStoreGatewayNoSyncedTenants
       expr: '(min by (instance, job) (cortex_bucket_stores_tenants_synced{component="store-gateway"}) == 0) and on (instance) (cortex_bucket_stores_tenants_synced{component="store-gateway"} offset 1h > 0)'
@@ -287,8 +293,9 @@ groups:
         summary: Mimir compactor has consecutive failures (instance {{ $labels.instance }})
         description: "Mimir compactor {{ $labels.instance }} has had {{ $value }} compaction failures in the last 2 hours.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
+    # cortex_compactor_disk_out_of_space_errors_total is declared as gauge by Mimir despite the _total suffix, so delta() is used instead of increase().
     - alert: MimirCompactorHasRunOutOfDiskSpace
-      expr: 'increase(cortex_compactor_disk_out_of_space_errors_total[24h]) >= 1'
+      expr: 'delta(cortex_compactor_disk_out_of_space_errors_total[24h]) >= 1'
       for: 0m
       labels:
         severity: critical
@@ -305,7 +312,7 @@ groups:
         summary: Mimir compactor has not uploaded blocks (instance {{ $labels.instance }})
         description: "Mimir compactor {{ $labels.instance }} has not uploaded any block in the last 24 hours.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
-    # Using 24h window per official mixin — compaction skips are rare events.
+    # Using a 24h window as compaction skips are rare events.
     - alert: MimirCompactorSkippedBlocks
       expr: 'increase(cortex_compactor_blocks_marked_for_no_compaction_total[24h]) > 0'
       for: 5m
@@ -352,8 +359,9 @@ groups:
         summary: Mimir ruler failed ring check (instance {{ $labels.instance }})
         description: "Mimir ruler {{ $labels.job }} is failing ring checks ({{ $value | humanize }}/s).\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
+    # Threshold of 0.05/s avoids firing on transient single-event spikes.
     - alert: MimirAlertmanagerSyncConfigsFailing
-      expr: 'rate(cortex_alertmanager_sync_configs_failed_total[5m]) > 0'
+      expr: 'rate(cortex_alertmanager_sync_configs_failed_total[5m]) > 0.05'
       for: 30m
       labels:
         severity: critical
@@ -361,8 +369,9 @@ groups:
         summary: Mimir alertmanager sync configs failing (instance {{ $labels.instance }})
         description: "Mimir alertmanager {{ $labels.job }} is failing to sync configs ({{ $value | humanize }}/s).\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
+    # Threshold of 0.05/s avoids firing on transient single-event spikes.
     - alert: MimirAlertmanagerRingCheckFailing
-      expr: 'rate(cortex_alertmanager_ring_check_errors_total[5m]) > 0'
+      expr: 'rate(cortex_alertmanager_ring_check_errors_total[5m]) > 0.05'
       for: 10m
       labels:
         severity: critical
@@ -370,8 +379,9 @@ groups:
         summary: Mimir alertmanager ring check failing (instance {{ $labels.instance }})
         description: "Mimir alertmanager {{ $labels.job }} is failing ring checks ({{ $value | humanize }}/s).\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
+    # Threshold of 0.05/s avoids firing on transient single-event spikes.
     - alert: MimirAlertmanagerStateMergeFailing
-      expr: 'rate(cortex_alertmanager_partial_state_merges_failed_total[5m]) > 0'
+      expr: 'rate(cortex_alertmanager_partial_state_merges_failed_total[5m]) > 0.05'
       for: 10m
       labels:
         severity: critical
@@ -379,8 +389,9 @@ groups:
         summary: Mimir alertmanager state merge failing (instance {{ $labels.instance }})
         description: "Mimir alertmanager {{ $labels.job }} is failing to merge state updates ({{ $value | humanize }}/s).\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
+    # Threshold of 0.05/s avoids firing on transient single-event spikes.
     - alert: MimirAlertmanagerReplicationFailing
-      expr: 'rate(cortex_alertmanager_state_replication_failed_total[5m]) > 0'
+      expr: 'rate(cortex_alertmanager_state_replication_failed_total[5m]) > 0.05'
       for: 10m
       labels:
         severity: critical
@@ -388,8 +399,9 @@ groups:
         summary: Mimir alertmanager replication failing (instance {{ $labels.instance }})
         description: "Mimir alertmanager {{ $labels.job }} is failing to replicate state ({{ $value | humanize }}/s).\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
+    # Threshold of 0.05/s avoids firing on transient single-event spikes.
     - alert: MimirAlertmanagerPersistStateFailing
-      expr: 'rate(cortex_alertmanager_state_persist_failed_total[15m]) > 0'
+      expr: 'rate(cortex_alertmanager_state_persist_failed_total[15m]) > 0.05'
       for: 1h
       labels:
         severity: critical

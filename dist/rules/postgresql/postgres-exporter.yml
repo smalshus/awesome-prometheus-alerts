@@ -70,7 +70,7 @@ groups:
         description: "PostgreSQL instance should have more connections (> 5)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: PostgresqlDeadLocks
-      expr: 'increase(pg_stat_database_deadlocks{datname!~"template.*|postgres"}[1m]) > 5'
+      expr: 'increase(pg_stat_database_deadlocks{datname!~"template.*|postgres",datid!="0"}[1m]) > 5'
       for: 0m
       labels:
         severity: warning
@@ -79,7 +79,7 @@ groups:
         description: "PostgreSQL has dead-locks ({{ $value }} in the last minute)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: PostgresqlHighRollbackRate
-      expr: 'sum by (namespace,datname) ((rate(pg_stat_database_xact_rollback{datname!~"template.*|postgres",datid!="0"}[3m])) / ((rate(pg_stat_database_xact_rollback{datname!~"template.*|postgres",datid!="0"}[3m])) + (rate(pg_stat_database_xact_commit{datname!~"template.*|postgres",datid!="0"}[3m])))) > 0.02'
+      expr: 'sum by (namespace,datname,instance) (rate(pg_stat_database_xact_rollback{datname!~"template.*|postgres",datid!="0"}[3m])) / (sum by (namespace,datname,instance) (rate(pg_stat_database_xact_rollback{datname!~"template.*|postgres",datid!="0"}[3m])) + sum by (namespace,datname,instance) (rate(pg_stat_database_xact_commit{datname!~"template.*|postgres",datid!="0"}[3m]))) > 0.02 and (sum by (namespace,datname,instance) (rate(pg_stat_database_xact_rollback{datname!~"template.*|postgres",datid!="0"}[3m])) + sum by (namespace,datname,instance) (rate(pg_stat_database_xact_commit{datname!~"template.*|postgres",datid!="0"}[3m]))) > 0'
       for: 0m
       labels:
         severity: warning
@@ -96,6 +96,7 @@ groups:
         summary: Postgresql commit rate low (instance {{ $labels.instance }})
         description: "Postgresql seems to be processing very few transactions\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
+    # pg_txid_current is not a default postgres_exporter metric. You need to define a custom query. See https://github.com/samber/awesome-prometheus-alerts/issues/289#issuecomment-1164842737
     - alert: PostgresqlLowXidConsumption
       expr: 'rate(pg_txid_current[1m]) < 5'
       for: 2m
@@ -132,6 +133,7 @@ groups:
         summary: Postgresql configuration changed (instance {{ $labels.instance }})
         description: "Postgres Database configuration change has occurred\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
+    # pg_stat_ssl_compression is not a default postgres_exporter metric and is only available on PostgreSQL 9.5-13 (removed in PG 14). See https://github.com/samber/awesome-prometheus-alerts/issues/289#issuecomment-1164842737
     - alert: PostgresqlSslCompressionActive
       expr: 'sum by (instance) (pg_stat_ssl_compression) > 0'
       for: 0m

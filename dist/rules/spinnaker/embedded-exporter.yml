@@ -36,24 +36,24 @@ groups:
         description: "Orca queue message lag is {{ $value }}s. Pipeline stages are waiting too long before being processed.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: SpinnakerDeadMessages
-      expr: 'rate(queue_dead_messages_total[5m]) > 0'
+      expr: 'rate(queue_dead_messages_total[5m]) > 0.05'
       for: 2m
       labels:
         severity: critical
       annotations:
         summary: Spinnaker dead messages (instance {{ $labels.instance }})
-        description: "Orca is producing dead-lettered messages ({{ $value }} per second). These are tasks that exhausted all retries and will not be executed.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+        description: "Orca is producing dead-lettered messages ({{ $value | humanize }}/s). These are tasks that exhausted all retries and will not be executed.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     # Zombies are pipeline executions that are running but have lost their queue entry.
     # See https://spinnaker.io/docs/guides/runbooks/orca-zombie-executions/
     - alert: SpinnakerZombieExecutions
-      expr: 'rate(queue_zombies_total[5m]) > 0'
+      expr: 'rate(queue_zombies_total[5m]) > 0.05'
       for: 5m
       labels:
         severity: warning
       annotations:
         summary: Spinnaker zombie executions (instance {{ $labels.instance }})
-        description: "{{ $value }} zombie pipeline executions detected. These are executions with no corresponding queue messages.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+        description: "Zombie pipeline executions rate is {{ $value | humanize }}/s. These are executions with no corresponding queue messages.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: SpinnakerThreadPoolExhaustion
       expr: 'threadpool_blockingQueueSize > 0'
@@ -76,7 +76,7 @@ groups:
         description: "Igor polling monitor {{ $labels.monitor }} for {{ $labels.partition }} has exceeded its item threshold, preventing pipeline triggers.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: SpinnakerPollingMonitorFailures
-      expr: 'rate(pollingMonitor_failed_total[5m]) > 0'
+      expr: 'rate(pollingMonitor_failed_total[5m]) > 0.05'
       for: 5m
       labels:
         severity: warning
@@ -95,7 +95,7 @@ groups:
         description: "Spinnaker API 5xx error rate is {{ $value | humanizePercentage }} on {{ $labels.instance }}.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: SpinnakerApiRateLimitThrottling
-      expr: 'rate(rateLimitThrottling_total[5m]) > 0'
+      expr: 'rate(rateLimitThrottling_total[5m]) > 0.05'
       for: 2m
       labels:
         severity: warning

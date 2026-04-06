@@ -6,16 +6,16 @@ groups:
   rules:
 
     - alert: SidekiqQueueSize
-      expr: 'sidekiq_queue_size > 100'
+      expr: 'sidekiq_queue_enqueued_jobs > 100'
       for: 1m
       labels:
         severity: warning
       annotations:
         summary: Sidekiq queue size (instance {{ $labels.instance }})
-        description: "Sidekiq queue {{ $labels.name }} is growing\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+        description: "Sidekiq queue {{ $labels.name }} is growing ({{ $value }} enqueued jobs)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: SidekiqSchedulingLatencyTooHigh
-      expr: 'max(sidekiq_queue_latency) > 60'
+      expr: 'max(sidekiq_queue_latency_seconds) > 60'
       for: 0m
       labels:
         severity: critical

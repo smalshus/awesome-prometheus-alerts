@@ -7,7 +7,7 @@ groups:
   
   rules:
 
-    # From the official snmp-mixin.
+    # Rename job=~"snmp.*" to match the actual job name in your Prometheus scrape config.
     - alert: SnmpTargetDown
       expr: 'up{job=~"snmp.*"} == 0'
       for: 5m

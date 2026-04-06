@@ -33,7 +33,7 @@ groups:
         description: "UPS now running on battery (since {{$value | humanizeDuration}})\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: ApcUpsLowBatteryVoltage
-      expr: '(apcupsd_battery_volts / apcupsd_battery_nominal_volts) < 0.95'
+      expr: '(apcupsd_battery_volts / apcupsd_battery_nominal_volts) < 0.95 and apcupsd_battery_nominal_volts > 0'
       for: 0m
       labels:
         severity: warning

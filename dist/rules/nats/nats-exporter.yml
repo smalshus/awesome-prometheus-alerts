@@ -32,6 +32,7 @@ groups:
         summary: Nats slow consumers (instance {{ $labels.instance }})
         description: "There are slow consumers in NATS for {{ $labels.instance }}\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
+    # Replace job="nats" with the actual job name in your Prometheus configuration.
     - alert: NatsServerDown
       expr: 'absent(up{job="nats"})'
       for: 5m
@@ -79,7 +80,7 @@ groups:
         description: "JetStream memory usage is over 80%\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: NatsHighNumberOfSubscriptions
-      expr: 'gnatsd_connz_subscriptions > 1000'
+      expr: 'gnatsd_varz_subscriptions > 1000'
       for: 5m
       labels:
         severity: warning
@@ -97,7 +98,7 @@ groups:
         description: "NATS server has more than 100,000 pending bytes\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: NatsTooManyErrors
-      expr: 'increase(gnatsd_varz_jetstream_stats_api_errors[5m]) > 0'
+      expr: 'increase(gnatsd_varz_jetstream_stats_api_errors[5m]) > 5'
       for: 5m
       labels:
         severity: warning
@@ -114,6 +115,8 @@ groups:
         summary: Nats JetStream accounts exceeded (instance {{ $labels.instance }})
         description: "JetStream has more than 100 active accounts\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
+    # Only enable this alert if your deployment requires leaf node connections.
+    # This will fire spuriously if leaf nodes are not configured.
     - alert: NatsLeafNodeConnectionIssue
       expr: 'gnatsd_varz_leafnodes == 0'
       for: 5m

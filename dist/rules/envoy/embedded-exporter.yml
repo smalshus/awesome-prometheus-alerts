@@ -66,7 +66,7 @@ groups:
         severity: warning
       annotations:
         summary: Envoy cluster membership degraded (instance {{ $labels.instance }})
-        description: "More than 25% of members in cluster {{ $labels.envoy_cluster_name }} on {{ $labels.instance }} are unhealthy\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+        description: "Only {{ $value | printf \"%.1f\" }}% of members in cluster {{ $labels.envoy_cluster_name }} on {{ $labels.instance }} are healthy (threshold: 75%)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: EnvoyHighClusterUpstreamConnectionFailures
       expr: 'increase(envoy_cluster_upstream_cx_connect_fail[5m]) > 10'
@@ -159,7 +159,7 @@ groups:
         description: "Circuit breaker is open for cluster {{ $labels.envoy_cluster_name }} on {{ $labels.instance }}\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: EnvoyNoHealthyUpstream
-      expr: 'increase(envoy_cluster_upstream_cx_none_healthy[5m]) > 0'
+      expr: 'increase(envoy_cluster_upstream_cx_none_healthy[5m]) > 3'
       for: 0m
       labels:
         severity: critical

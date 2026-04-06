@@ -135,7 +135,7 @@ groups:
         description: "Access denied errors have been logged, which could indicate permission issues or unauthorized access attempts.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: ClickhouseRejectedInsertQueries
-      expr: 'increase(ClickHouseProfileEvents_RejectedInserts[1m]) > 0'
+      expr: 'increase(ClickHouseProfileEvents_RejectedInserts[1m]) > 2'
       for: 1m
       labels:
         severity: warning
@@ -144,7 +144,7 @@ groups:
         description: "INSERTs rejected due to too many active data parts. Reduce insert frequency.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: ClickhouseDelayedInsertQueries
-      expr: 'increase(ClickHouseProfileEvents_DelayedInserts[5m]) > 0'
+      expr: 'increase(ClickHouseProfileEvents_DelayedInserts[5m]) > 10'
       for: 2m
       labels:
         severity: warning
@@ -172,7 +172,7 @@ groups:
         description: "High network usage. ClickHouse network usage exceeds 100MB/s.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: ClickhouseDistributedRejectedInserts
-      expr: 'increase(ClickHouseProfileEvents_DistributedRejectedInserts[5m]) > 0'
+      expr: 'increase(ClickHouseProfileEvents_DistributedRejectedInserts[5m]) > 3'
       for: 2m
       labels:
         severity: critical

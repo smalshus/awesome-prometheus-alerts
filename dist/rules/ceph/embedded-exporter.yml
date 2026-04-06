@@ -5,9 +5,11 @@ groups:
   
   rules:
 
+    # ceph_health_status: 0=HEALTH_OK, 1=HEALTH_WARN, 2=HEALTH_ERR.
+    # This rule fires on any non-OK state. Split into separate warning/critical rules by using ==1 and ==2 thresholds if needed.
     - alert: CephState
       expr: 'ceph_health_status != 0'
-      for: 0m
+      for: 1m
       labels:
         severity: critical
       annotations:
@@ -34,15 +36,16 @@ groups:
 
     - alert: CephOsdDown
       expr: 'ceph_osd_up == 0'
-      for: 0m
+      for: 1m
       labels:
         severity: critical
       annotations:
         summary: Ceph OSD Down (instance {{ $labels.instance }})
         description: "Ceph Object Storage Daemon Down\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
+    # Threshold of 5000ms (5 seconds). Adjust based on your expected OSD performance.
     - alert: CephHighOsdLatency
-      expr: 'ceph_osd_perf_apply_latency_seconds > 5'
+      expr: 'ceph_osd_apply_latency_ms > 5000'
       for: 1m
       labels:
         severity: warning
@@ -50,14 +53,16 @@ groups:
         summary: Ceph high OSD latency (instance {{ $labels.instance }})
         description: "Ceph Object Storage Daemon latency is high. Please check if it doesn't stuck in weird state.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
-    - alert: CephOsdLowSpace
-      expr: 'ceph_osd_utilization > 90'
-      for: 2m
+    # Ceph internally triggers OSD_NEARFULL based on the nearfull_ratio (default 85%).
+    # ceph_health_detail can also be used for more granular OSD space alerts.
+    - alert: CephOsdNearFull
+      expr: 'ceph_health_detail{name="OSD_NEARFULL"} == 1'
+      for: 5m
       labels:
         severity: warning
       annotations:
-        summary: Ceph OSD low space (instance {{ $labels.instance }})
-        description: "Ceph Object Storage Daemon is going out of space. Please add more disks.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+        summary: Ceph OSD near full (instance {{ $labels.instance }})
+        description: "A Ceph OSD is dangerously full. Please add more disks.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: CephOsdReweighted
       expr: 'ceph_osd_weight < 1'
@@ -115,7 +120,7 @@ groups:
 
     - alert: CephPgUnavailable
       expr: 'ceph_pg_total - ceph_pg_active > 0'
-      for: 0m
+      for: 1m
       labels:
         severity: critical
       annotations:

@@ -24,23 +24,23 @@ groups:
         description: "Cortex not connected to Alertmanager (instance {{ $labels.instance }})\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     # Threshold of 0.05/s avoids firing on transient single-event spikes.
-    - alert: CortexNotificationAreBeingDropped
+    - alert: CortexNotificationsAreBeingDropped
       expr: 'rate(cortex_prometheus_notifications_dropped_total[5m]) > 0.05'
       for: 0m
       labels:
         severity: critical
       annotations:
-        summary: Cortex notification are being dropped (instance {{ $labels.instance }})
-        description: "Cortex notification are being dropped due to errors (instance {{ $labels.instance }}, {{ $value | humanize }}/s).\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+        summary: Cortex notifications are being dropped (instance {{ $labels.instance }})
+        description: "Cortex notifications are being dropped due to errors (instance {{ $labels.instance }}, {{ $value | humanize }}/s).\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     # Threshold of 0.05/s avoids firing on transient single-event spikes.
-    - alert: CortexNotificationError
+    - alert: CortexNotificationErrors
       expr: 'rate(cortex_prometheus_notifications_errors_total[5m]) > 0.05'
       for: 0m
       labels:
         severity: critical
       annotations:
-        summary: Cortex notification error (instance {{ $labels.instance }})
+        summary: Cortex notification errors (instance {{ $labels.instance }})
         description: "Cortex is failing when sending alert notifications (instance {{ $labels.instance }}, {{ $value | humanize }}/s).\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: CortexIngesterUnhealthy

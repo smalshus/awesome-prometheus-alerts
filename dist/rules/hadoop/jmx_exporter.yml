@@ -5,6 +5,9 @@ groups:
   
   rules:
 
+    # When targets are managed via service discovery, a disappeared target goes stale rather than reporting up==0,
+    # so this alert may not fire. Prefer application-level availability metrics if available.
+    # Rename job="hadoop-namenode" to match the actual job name in your Prometheus scrape config.
     - alert: HadoopNameNodeDown
       expr: 'up{job="hadoop-namenode"} == 0'
       for: 5m
@@ -14,6 +17,9 @@ groups:
         summary: Hadoop Name Node Down (instance {{ $labels.instance }})
         description: "The Hadoop NameNode service is unavailable.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
+    # When targets are managed via service discovery, a disappeared target goes stale rather than reporting up==0,
+    # so this alert may not fire. Prefer application-level availability metrics if available.
+    # Rename job="hadoop-resourcemanager" to match the actual job name in your Prometheus scrape config.
     - alert: HadoopResourceManagerDown
       expr: 'up{job="hadoop-resourcemanager"} == 0'
       for: 5m
@@ -51,7 +57,7 @@ groups:
         description: "There is an unusually high number of MapReduce task failures.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: HadoopResourceManagerMemoryHigh
-      expr: 'hadoop_resourcemanager_memory_bytes / hadoop_resourcemanager_memory_max_bytes > 0.8'
+      expr: 'hadoop_resourcemanager_memory_bytes / hadoop_resourcemanager_memory_max_bytes > 0.8 and hadoop_resourcemanager_memory_max_bytes > 0'
       for: 15m
       labels:
         severity: warning
@@ -78,7 +84,7 @@ groups:
         description: "The HBase cluster has an unusually high number of regions.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: HadoopHbaseRegionServerHeapLow
-      expr: 'hadoop_hbase_region_server_heap_bytes / hadoop_hbase_region_server_max_heap_bytes > 0.8'
+      expr: 'hadoop_hbase_region_server_heap_bytes / hadoop_hbase_region_server_max_heap_bytes > 0.8 and hadoop_hbase_region_server_max_heap_bytes > 0'
       for: 10m
       labels:
         severity: warning

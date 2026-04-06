@@ -5,6 +5,7 @@ groups:
   
   rules:
 
+    # Adjust the job label regex to match the actual job name in your Prometheus scrape config.
     - alert: OpenstackExporterDown
       expr: 'up{job=~".*openstack.*"} == 0'
       for: 2m

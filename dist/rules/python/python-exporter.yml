@@ -6,13 +6,13 @@ groups:
   rules:
 
     - alert: PythonGcObjectsUncollectable
-      expr: 'increase(python_gc_objects_uncollectable_total[5m]) > 0'
+      expr: 'increase(python_gc_objects_uncollectable_total[5m]) > 1'
       for: 5m
       labels:
         severity: warning
       annotations:
         summary: Python GC objects uncollectable (instance {{ $labels.instance }})
-        description: "Python has uncollectable objects, potential memory leak via reference cycles\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+        description: "Python has uncollectable objects ({{ $value }}), potential memory leak via reference cycles\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: PythonGcCollectionsHigh
       expr: 'rate(python_gc_objects_collected_total[5m]) > 10000'

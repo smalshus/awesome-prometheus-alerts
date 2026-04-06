@@ -78,7 +78,7 @@ groups:
         description: "DigitalOcean platform has {{ $value }} active incident(s).\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: DigitaloceanExporterCollectionErrors
-      expr: 'increase(digitalocean_errors_total[5m]) > 0'
+      expr: 'increase(digitalocean_errors_total[5m]) > 3'
       for: 5m
       labels:
         severity: warning

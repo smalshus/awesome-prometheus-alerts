@@ -97,7 +97,7 @@ groups:
         description: "Some Cassandra client requests are unavailable to read - {{ $labels.cassandra_cluster }}\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: CassandraClientRequestWriteFailure(instaclustr)
-      expr: 'increase(cassandra_client_request_failures_total{operation="write"}[1m]) > 0'
+      expr: 'increase(cassandra_client_request_failures_total{operation="write"}[1m]) > 5'
       for: 2m
       labels:
         severity: critical
@@ -106,7 +106,7 @@ groups:
         description: "Write failures have occurred, ensure there are not too many unavailable nodes - {{ $labels.cassandra_cluster }}\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: CassandraClientRequestReadFailure(instaclustr)
-      expr: 'increase(cassandra_client_request_failures_total{operation="read"}[1m]) > 0'
+      expr: 'increase(cassandra_client_request_failures_total{operation="read"}[1m]) > 5'
       for: 2m
       labels:
         severity: critical

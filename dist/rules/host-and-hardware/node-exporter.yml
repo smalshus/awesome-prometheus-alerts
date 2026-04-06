@@ -14,8 +14,9 @@ groups:
         summary: Host out of memory (instance {{ $labels.instance }})
         description: "Node memory is filling up (< 10% left)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
+    # node_vmstat_pgmajfault is exposed as untyped/gauge by node_exporter (from /proc/vmstat), so deriv() is used instead of rate().
     - alert: HostMemoryUnderMemoryPressure
-      expr: '(rate(node_vmstat_pgmajfault[5m]) > 1000)'
+      expr: '(deriv(node_vmstat_pgmajfault[5m]) > 1000)'
       for: 0m
       labels:
         severity: warning
@@ -173,13 +174,13 @@ groups:
         severity: warning
       annotations:
         summary: Host unusual disk IO (instance {{ $labels.instance }})
-        description: "Disk usage >80%. Check storage for issues or increase IOPS capabilities. Check storage for issues.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+        description: "Disk usage >80%. Check storage for issues or increase IOPS capabilities.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     # x2 context switches is an arbitrary number.
     # The alert threshold depends on the nature of the application.
     # Please read: https://github.com/samber/awesome-prometheus-alerts/issues/58
     - alert: HostContextSwitchingHigh
-      expr: '(rate(node_context_switches_total[15m])/count without(mode,cpu) (node_cpu_seconds_total{mode="idle"})) / (rate(node_context_switches_total[1d])/count without(mode,cpu) (node_cpu_seconds_total{mode="idle"})) > 2'
+      expr: '(rate(node_context_switches_total[15m])/count without(mode,cpu) (node_cpu_seconds_total{mode="idle"})) / (rate(node_context_switches_total[1d])/count without(mode,cpu) (node_cpu_seconds_total{mode="idle"})) > 2 and rate(node_context_switches_total[1d]) > 0'
       for: 0m
       labels:
         severity: warning
@@ -223,7 +224,7 @@ groups:
         summary: Host node overtemperature alarm (instance {{ $labels.instance }})
         description: "Physical node temperature alarm triggered\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
-    # Uses ignoring(state) to handle additional labels on node_md_disks. Matches the official node-exporter mixin.
+    # Uses ignoring(state) to handle additional labels on node_md_disks.
     - alert: HostSoftwareRaidInsufficientDrives
       expr: '((node_md_disks_required - ignoring(state) node_md_disks{state="active"}) > 0)'
       for: 0m
@@ -253,7 +254,7 @@ groups:
 
     # When a machine runs out of memory, the node exporter can become unresponsive for several minutes. Even if the system takes 15–20 minutes to recover, the alert should still trigger.
     - alert: HostOomKillDetected
-      expr: '(increase(node_vmstat_oom_kill[30m]) > 0)'
+      expr: '(delta(node_vmstat_oom_kill[30m]) > 0)'
       for: 0m
       labels:
         severity: warning
@@ -268,7 +269,7 @@ groups:
         severity: info
       annotations:
         summary: Host EDAC Correctable Errors detected (instance {{ $labels.instance }})
-        description: "Host {{ $labels.instance }} has had {{ printf \"%.0f\" $value }} correctable memory errors reported by EDAC in the last 5 minutes.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+        description: "Host {{ $labels.instance }} has had {{ printf \"%.0f\" $value }} correctable memory errors reported by EDAC in the last 1 minute.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: HostEdacUncorrectableErrorsDetected
       expr: '(node_edac_uncorrectable_errors_total > 0)'
@@ -277,7 +278,7 @@ groups:
         severity: warning
       annotations:
         summary: Host EDAC Uncorrectable Errors detected (instance {{ $labels.instance }})
-        description: "Host {{ $labels.instance }} has had {{ printf \"%.0f\" $value }} uncorrectable memory errors reported by EDAC in the last 5 minutes.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+        description: "Host {{ $labels.instance }} has had {{ printf \"%.0f\" $value }} uncorrectable memory errors reported by EDAC.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: HostNetworkReceiveErrors
       expr: '(rate(node_network_receive_errs_total[2m]) / rate(node_network_receive_packets_total[2m]) > 0.01) and rate(node_network_receive_packets_total[2m]) > 0'

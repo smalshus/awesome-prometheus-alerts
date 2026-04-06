@@ -57,10 +57,10 @@ groups:
         summary: Go heap objects count high (instance {{ $labels.instance }})
         description: "Go heap has too many live objects (> 10M), high GC pressure\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
-    # go_memstats_gc_cpu_fraction is deprecated since Go 1.20 and may return 0 in newer versions.
-    # Consider using runtime/metrics-based alternatives if running Go >= 1.20.
+    # rate(go_gc_duration_seconds_sum) approximates the fraction of wall-clock time spent in GC.
+    # This replaces go_memstats_gc_cpu_fraction which was removed in client_golang v1.12+.
     - alert: GoGcCpuFractionHigh
-      expr: 'go_memstats_gc_cpu_fraction > 0.05'
+      expr: 'rate(go_gc_duration_seconds_sum[5m]) > 0.05'
       for: 5m
       labels:
         severity: warning
@@ -68,23 +68,27 @@ groups:
         summary: Go GC CPU fraction high (instance {{ $labels.instance }})
         description: "Go GC is consuming too much CPU (> 5%)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
+    # A threshold of 100/s only catches catastrophic leaks (30k goroutines in 5m). 10/s catches gradual leaks (~3k in 5m).
+    # Adjust based on your application's expected concurrency patterns.
     - alert: GoGoroutineSpike
-      expr: 'deriv(go_goroutines[5m]) > 100'
+      expr: 'deriv(go_goroutines[5m]) > 10'
       for: 5m
       labels:
         severity: warning
       annotations:
         summary: Go goroutine spike (instance {{ $labels.instance }})
-        description: "Go goroutine count is growing rapidly\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+        description: "Go goroutine count is growing rapidly ({{ $value | printf \"%.0f\" }} goroutines/s)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
-    - alert: GoHeapFragmentation
-      expr: 'go_memstats_heap_idle_bytes / go_memstats_heap_sys_bytes > 0.9'
-      for: 5m
+    # Alerts when heap in-use grows by more than 10MB/s sustained over 10 minutes.
+    # Adjust threshold based on your workload.
+    - alert: GoHeapIn-useGrowing
+      expr: 'deriv(go_memstats_heap_inuse_bytes[10m]) > 1e7'
+      for: 0m
       labels:
         severity: warning
       annotations:
-        summary: Go heap fragmentation (instance {{ $labels.instance }})
-        description: "Go heap has high idle ratio (> 90%), indicating memory fragmentation\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+        summary: Go heap in-use growing (instance {{ $labels.instance }})
+        description: "Go heap in-use memory is growing steadily, potential memory leak or under-sized heap\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: GoMemoryLeak
       expr: 'rate(go_memstats_alloc_bytes_total[5m]) > 1e9'

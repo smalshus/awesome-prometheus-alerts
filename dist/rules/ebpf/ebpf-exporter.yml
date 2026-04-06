@@ -16,7 +16,7 @@ groups:
         description: "eBPF program {{ $labels.id }} failed to attach. The program is not collecting data. (instance {{ $labels.instance }})\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: EbpfExporterDecoderErrors
-      expr: 'rate(ebpf_exporter_decoder_errors_total[5m]) > 0'
+      expr: 'rate(ebpf_exporter_decoder_errors_total[5m]) > 0.05'
       for: 5m
       labels:
         severity: warning

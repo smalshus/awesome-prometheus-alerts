@@ -42,8 +42,9 @@ groups:
         summary: Systemd unit tasks near limit (instance {{ $labels.instance }})
         description: "Systemd unit {{ $labels.name }} is using {{ $value | humanizePercentage }} of its task limit. (instance {{ $labels.instance }})\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
+    # systemd_socket_refused_connections_total is declared as Gauge by the exporter despite the _total suffix, so delta() is used instead of increase().
     - alert: SystemdSocketRefusedConnections
-      expr: 'increase(systemd_socket_refused_connections_total[5m]) > 0'
+      expr: 'delta(systemd_socket_refused_connections_total[5m]) > 3'
       for: 2m
       labels:
         severity: warning

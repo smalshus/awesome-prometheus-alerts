@@ -12,7 +12,7 @@ groups:
         severity: critical
       annotations:
         summary: Kafka topics replicas (instance {{ $labels.instance }})
-        description: "Kafka topic in-sync partition\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+        description: "Kafka topic {{ $labels.topic }} has fewer than 3 in-sync replicas ({{ $value }}), data durability is at risk.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: KafkaConsumerGroupLag
       expr: 'sum(kafka_consumergroup_lag) by (consumergroup) > 10000'

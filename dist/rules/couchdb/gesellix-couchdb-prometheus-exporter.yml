@@ -23,6 +23,7 @@ groups:
         summary: CouchDB atom memory usage critical (instance {{ $labels.instance }})
         description: "Atom memory usage is above 90% of limit\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
+    # The default max_dbs_open is 500. Adjust the threshold (currently 0.9 * 1000) to match your max_dbs_open setting.
     - alert: CouchdbOpenDatabasesCritical
       expr: 'couchdb_httpd_open_databases > 0.9 * 1000'
       for: 5m
@@ -32,6 +33,7 @@ groups:
         summary: CouchDB open databases critical (instance {{ $labels.instance }})
         description: "Number of open databases exceeds 90% of node capacity\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
+    # Adjust 65535 to match your system's file descriptor limit (ulimit -n).
     - alert: CouchdbOpenOsFilesCritical
       expr: 'couchdb_httpd_open_os_files > 0.9 * 65535'
       for: 5m
@@ -159,7 +161,7 @@ groups:
         description: "CouchDB process has restarted recently\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: CouchdbCriticalLogEntries
-      expr: 'increase(couchdb_server_couch_log{level=~"error|critical"}[5m]) > 0'
+      expr: 'increase(couchdb_server_couch_log{level=~"error|critical"}[5m]) > 5'
       for: 1m
       labels:
         severity: critical

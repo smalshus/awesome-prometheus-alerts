@@ -32,7 +32,7 @@ groups:
         severity: critical
       annotations:
         summary: RabbitMQ cluster partition (instance {{ $labels.instance }})
-        description: "Cluster partition\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+        description: "RabbitMQ cluster has a network partition ({{ $value }} partitions detected). Messages may be lost or duplicated.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: RabbitmqOutOfMemory
       expr: 'rabbitmq_node_mem_used / rabbitmq_node_mem_limit * 100 > 90 and rabbitmq_node_mem_limit > 0'
@@ -44,7 +44,7 @@ groups:
         description: "Memory available for RabbitMQ is low (< 10%)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: RabbitmqInstanceTooManyConnections
-      expr: 'rabbitmq_connectionsTotal > 1000'
+      expr: 'rabbitmq_connections > 1000'
       for: 2m
       labels:
         severity: warning

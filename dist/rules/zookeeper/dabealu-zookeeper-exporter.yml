@@ -31,7 +31,7 @@ groups:
         severity: critical
       annotations:
         summary: Zookeeper Too Many Leaders (instance {{ $labels.instance }})
-        description: "Zookeeper cluster has too many nodes marked as leader\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+        description: "Zookeeper cluster has {{ $value }} nodes marked as leader (expected 1), indicating a split-brain\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: ZookeeperNotOk
       expr: 'zk_ruok == 0'
@@ -40,4 +40,4 @@ groups:
         severity: warning
       annotations:
         summary: Zookeeper Not Ok (instance {{ $labels.instance }})
-        description: "Zookeeper instance is not ok\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+        description: "Zookeeper instance {{ $labels.instance }} is not ok (ruok check failed)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"

@@ -15,7 +15,7 @@ groups:
         description: "No more than one Thanos Compact instance should be running at once. There are {{$value}} instances running.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: ThanosCompactorHalted
-      expr: 'thanos_compact_halted{job=~".*thanos-compact.*"} == 1'
+      expr: 'thanos_compact_halted == 1'
       for: 5m
       labels:
         severity: warning
@@ -24,7 +24,7 @@ groups:
         description: "Thanos Compact {{$labels.job}} has failed to run and now is halted.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: ThanosCompactorHighCompactionFailures
-      expr: '(sum by (job) (rate(thanos_compact_group_compactions_failures_total{job=~".*thanos-compact.*"}[5m])) / sum by (job) (rate(thanos_compact_group_compactions_total{job=~".*thanos-compact.*"}[5m])) * 100 > 5) and sum by (job) (rate(thanos_compact_group_compactions_total{job=~".*thanos-compact.*"}[5m])) > 0'
+      expr: '(sum by (job) (rate(thanos_compact_group_compactions_failures_total[5m])) / sum by (job) (rate(thanos_compact_group_compactions_total[5m])) * 100 > 5) and sum by (job) (rate(thanos_compact_group_compactions_total[5m])) > 0'
       for: 15m
       labels:
         severity: warning

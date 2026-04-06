@@ -7,7 +7,7 @@ groups:
 
     - alert: VaultSealed
       expr: 'vault_core_unsealed == 0'
-      for: 0m
+      for: 1m
       labels:
         severity: critical
       annotations:
@@ -21,7 +21,7 @@ groups:
         severity: warning
       annotations:
         summary: Vault too many pending tokens (instance {{ $labels.instance }})
-        description: "Too many pending tokens {{ $labels.instance }}: {{ $value | printf \"%.2f\"}}%\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+        description: "Too many pending tokens on {{ $labels.instance }}: {{ $value }} tokens created but not yet stored.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: VaultTooManyInfinityTokens
       expr: 'vault_token_count_by_ttl{creation_ttl="+Inf"} > 3'
@@ -30,13 +30,13 @@ groups:
         severity: warning
       annotations:
         summary: Vault too many infinity tokens (instance {{ $labels.instance }})
-        description: "Too many infinity tokens {{ $labels.instance }}: {{ $value | printf \"%.2f\"}}%\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+        description: "Too many non-expiring tokens on {{ $labels.instance }}: {{ $value }} tokens with infinite TTL.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: VaultClusterHealth
-      expr: 'sum(vault_core_active) / count(vault_core_active) <= 0.5'
+      expr: 'sum(vault_core_active) / count(vault_core_active) <= 0.5 and count(vault_core_active) > 0'
       for: 0m
       labels:
         severity: critical
       annotations:
         summary: Vault cluster health (instance {{ $labels.instance }})
-        description: "Vault cluster is not healthy {{ $labels.instance }}: {{ $value | printf \"%.2f\"}}%\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+        description: "Vault cluster is not healthy: only {{ $value | humanizePercentage }} of nodes are active.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"

@@ -33,7 +33,7 @@ groups:
         description: "High viewwrite latency on {{ $labels.instance }} cassandra node\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: CassandraAuthenticationFailures
-      expr: 'rate(cassandra_stats{name="org:apache:cassandra:metrics:client:authfailure:count"}[1m]) > 5'
+      expr: 'delta(cassandra_stats{name="org:apache:cassandra:metrics:client:authfailure:count"}[1m]) > 5'
       for: 2m
       labels:
         severity: warning
@@ -97,7 +97,7 @@ groups:
         description: "Some Cassandra repair tasks are blocked\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: CassandraConnectionTimeoutsTotal(criteo)
-      expr: 'rate(cassandra_stats{name="org:apache:cassandra:metrics:connection:totaltimeouts:count"}[1m]) > 5'
+      expr: 'delta(cassandra_stats{name="org:apache:cassandra:metrics:connection:totaltimeouts:count"}[1m]) > 5'
       for: 2m
       labels:
         severity: critical
@@ -142,7 +142,7 @@ groups:
         description: "Read failures have occurred because too many nodes are unavailable\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: CassandraClientRequestWriteFailure(criteo)
-      expr: 'cassandra_stats{name="org:apache:cassandra:metrics:clientrequest:write:failures:oneminuterate"} > 0'
+      expr: 'cassandra_stats{name="org:apache:cassandra:metrics:clientrequest:write:failures:oneminuterate"} > 0.05'
       for: 0m
       labels:
         severity: critical
@@ -151,7 +151,7 @@ groups:
         description: "A lot of write failures encountered. A write failure is a non-timeout exception encountered during a write request. Examine the reason map to find to the root cause. The most common cause for this type of error is when batch sizes are too large.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: CassandraClientRequestReadFailure(criteo)
-      expr: 'cassandra_stats{name="org:apache:cassandra:metrics:clientrequest:read:failures:oneminuterate"} > 0'
+      expr: 'cassandra_stats{name="org:apache:cassandra:metrics:clientrequest:read:failures:oneminuterate"} > 0.05'
       for: 0m
       labels:
         severity: critical
@@ -159,11 +159,12 @@ groups:
         summary: Cassandra client request read failure (Criteo) (instance {{ $labels.instance }})
         description: "A lot of read failures encountered. A read failure is a non-timeout exception encountered during a read request. Examine the reason map to find to the root cause. The most common cause for this type of error is when batch sizes are too large.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
+    # A low key cache hit rate increases disk I/O. Threshold is workload-dependent — adjust based on your data access patterns.
     - alert: CassandraCacheHitRateKeyCache
       expr: 'cassandra_stats{name="org:apache:cassandra:metrics:cache:keycache:hitrate:value"} < .85'
       for: 2m
       labels:
-        severity: critical
+        severity: warning
       annotations:
         summary: Cassandra cache hit rate key cache (instance {{ $labels.instance }})
         description: "Key cache hit rate is below 85%\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"

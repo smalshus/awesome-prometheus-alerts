@@ -5,9 +5,9 @@ groups:
   
   rules:
 
-    # grpc_code!="OK" includes non-error codes like NotFound, AlreadyExists. Consider filtering to specific error codes for less noise.
+    # Filters to actual error codes. grpc_code!="OK" includes benign codes like NotFound, AlreadyExists, and Cancelled.
     - alert: GitlabGitalyHighGrpcErrorRate
-      expr: 'sum(rate(grpc_server_handled_total{job="gitaly",grpc_code!="OK"}[5m])) / sum(rate(grpc_server_handled_total{job="gitaly"}[5m])) * 100 > 5 and sum(rate(grpc_server_handled_total{job="gitaly"}[5m])) > 0'
+      expr: 'sum(rate(grpc_server_handled_total{job="gitaly",grpc_code=~"Internal|Unavailable|DeadlineExceeded|ResourceExhausted|Aborted|Unknown|DataLoss"}[5m])) / sum(rate(grpc_server_handled_total{job="gitaly"}[5m])) * 100 > 5 and sum(rate(grpc_server_handled_total{job="gitaly"}[5m])) > 0'
       for: 5m
       labels:
         severity: warning
@@ -17,7 +17,6 @@ groups:
 
     # ResourceExhausted errors from Gitaly mean Git operations are being rejected due to
     # concurrency limits. This directly impacts users trying to push, pull, or clone.
-    # This alert is derived from the GitLab Omnibus default rules.
     - alert: GitlabGitalyResourceExhausted
       expr: 'sum(rate(grpc_server_handled_total{job="gitaly",grpc_code="ResourceExhausted"}[5m])) / sum(rate(grpc_server_handled_total{job="gitaly"}[5m])) * 100 > 1 and sum(rate(grpc_server_handled_total{job="gitaly"}[5m])) > 0'
       for: 5m
@@ -36,8 +35,9 @@ groups:
         summary: GitLab Gitaly high RPC latency (instance {{ $labels.instance }})
         description: "Gitaly on {{ $labels.instance }} p95 unary RPC latency exceeds 1 second ({{ $value }}s).\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
+    # Brief throttling spikes are normal. Threshold of 0.1s/s (10% of CPU time throttled) filters out transient noise.
     - alert: GitlabGitalyCpuThrottled
-      expr: 'rate(gitaly_cgroup_cpu_cfs_throttled_seconds_total[5m]) > 0'
+      expr: 'rate(gitaly_cgroup_cpu_cfs_throttled_seconds_total[5m]) > 0.1'
       for: 5m
       labels:
         severity: warning
@@ -46,7 +46,7 @@ groups:
         description: "Gitaly processes on {{ $labels.instance }} are being CPU throttled by cgroups.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: GitlabGitalyAuthenticationFailures
-      expr: 'increase(gitaly_authentications_total{status="failed"}[5m]) > 0'
+      expr: 'increase(gitaly_authentications_total{status="failed"}[5m]) > 3'
       for: 0m
       labels:
         severity: warning

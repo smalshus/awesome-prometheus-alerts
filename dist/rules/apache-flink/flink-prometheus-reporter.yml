@@ -35,7 +35,7 @@ groups:
 
     # A single restart may be normal during deployments. Adjust threshold based on restart tolerance.
     - alert: FlinkJobRestartIncreasing
-      expr: 'increase(flink_jobmanager_job_numRestarts[5m]) > 1'
+      expr: 'delta(flink_jobmanager_job_numRestarts[5m]) > 1'
       for: 5m
       labels:
         severity: warning
@@ -44,7 +44,7 @@ groups:
         description: "Flink job {{ $labels.job_name }} has restarted {{ $value }} times in the last 5 minutes.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: FlinkCheckpointFailures
-      expr: 'increase(flink_jobmanager_job_numberOfFailedCheckpoints[10m]) > 1'
+      expr: 'delta(flink_jobmanager_job_numberOfFailedCheckpoints[10m]) > 1'
       for: 5m
       labels:
         severity: warning
@@ -82,8 +82,9 @@ groups:
         summary: Flink task high backpressure time (instance {{ $labels.instance }})
         description: "Flink task {{ $labels.task_name }} is spending {{ $value | humanize }}ms/sec in backpressure.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
+    # Flink TaskManagers manage their own memory pool. High JVM heap usage (outside managed memory) may indicate memory leaks or misconfiguration.
     - alert: FlinkTaskmanagerHeapMemoryHigh
-      expr: 'flink_taskmanager_Status_JVM_Memory_Heap_Used / flink_taskmanager_Status_JVM_Memory_Heap_Max > 0.9'
+      expr: 'flink_taskmanager_Status_JVM_Memory_Heap_Used / flink_taskmanager_Status_JVM_Memory_Heap_Max > 0.9 and flink_taskmanager_Status_JVM_Memory_Heap_Max > 0'
       for: 5m
       labels:
         severity: warning
@@ -92,7 +93,7 @@ groups:
         description: "Flink TaskManager {{ $labels.instance }} heap memory usage is above 90%.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: FlinkJobmanagerHeapMemoryHigh
-      expr: 'flink_jobmanager_Status_JVM_Memory_Heap_Used / flink_jobmanager_Status_JVM_Memory_Heap_Max > 0.9'
+      expr: 'flink_jobmanager_Status_JVM_Memory_Heap_Used / flink_jobmanager_Status_JVM_Memory_Heap_Max > 0.9 and flink_jobmanager_Status_JVM_Memory_Heap_Max > 0'
       for: 5m
       labels:
         severity: warning
@@ -100,9 +101,10 @@ groups:
         summary: Flink JobManager heap memory high (instance {{ $labels.instance }})
         description: "Flink JobManager {{ $labels.instance }} heap memory usage is above 90%.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
+    # Flink exposes GC time as a gauge (cumulative milliseconds), so deriv() is used instead of rate().
     # Threshold: more than 100ms/sec of GC time (10% of wall clock). Adjust based on your workload.
     - alert: FlinkTaskmanagerGcTimeHigh
-      expr: 'rate(flink_taskmanager_Status_JVM_GarbageCollector_All_Time[5m]) > 100'
+      expr: 'deriv(flink_taskmanager_Status_JVM_GarbageCollector_All_Time[5m]) > 100'
       for: 5m
       labels:
         severity: warning
@@ -112,7 +114,7 @@ groups:
 
     # Only fires for tasks that have previously received records, to avoid false positives during startup.
     - alert: FlinkNoRecordsProcessed
-      expr: 'rate(flink_taskmanager_job_task_numRecordsIn[5m]) == 0 and flink_taskmanager_job_task_numRecordsIn > 0'
+      expr: 'delta(flink_taskmanager_job_task_numRecordsIn[5m]) == 0 and flink_taskmanager_job_task_numRecordsIn > 0'
       for: 5m
       labels:
         severity: warning

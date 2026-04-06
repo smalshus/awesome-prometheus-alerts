@@ -34,13 +34,13 @@ groups:
         description: "Memcached connection usage is above 95% on {{ $labels.instance }} (current value: {{ $value }}%)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: MemcachedOutOfMemoryErrors
-      expr: 'sum without (slab) (rate(memcached_slab_items_outofmemory_total[5m])) > 0'
+      expr: 'sum without (slab) (rate(memcached_slab_items_outofmemory_total[5m])) > 0.05'
       for: 5m
       labels:
         severity: warning
       annotations:
         summary: Memcached out of memory errors (instance {{ $labels.instance }})
-        description: "Memcached is returning out-of-memory errors on {{ $labels.instance }}\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+        description: "Memcached is returning out-of-memory errors on {{ $labels.instance }} ({{ $value }} errors/s)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     # High memory usage is expected if the cache is well-utilized. This alert fires when it approaches the configured limit, which may cause evictions.
     - alert: MemcachedMemoryUsageHigh(>90%)
@@ -73,7 +73,7 @@ groups:
         description: "Memcached cache hit rate is below 80% on {{ $labels.instance }} (current value: {{ $value }}%)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: MemcachedConnectionsRejected
-      expr: 'increase(memcached_connections_rejected_total[5m]) > 0'
+      expr: 'increase(memcached_connections_rejected_total[5m]) > 3'
       for: 5m
       labels:
         severity: warning
@@ -82,7 +82,7 @@ groups:
         description: "Memcached is rejecting connections on {{ $labels.instance }} ({{ $value }} rejections in the last 5m)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: MemcachedItemsTooLarge
-      expr: 'increase(memcached_item_too_large_total[5m]) > 0'
+      expr: 'increase(memcached_item_too_large_total[5m]) > 3'
       for: 5m
       labels:
         severity: info
