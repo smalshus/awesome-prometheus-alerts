@@ -6,7 +6,7 @@ groups:
   rules:
 
     # ceph_health_status: 0=HEALTH_OK, 1=HEALTH_WARN, 2=HEALTH_ERR.
-    # This rule fires on any non-OK state. Split into separate warning/critical rules by using ==1 and ==2 thresholds if needed.
+    # This rule fires on any non-OK state. Split into ==1 (warning) and ==2 (critical) if you want separate severity levels.
     - alert: CephState
       expr: 'ceph_health_status != 0'
       for: 1m
@@ -54,7 +54,7 @@ groups:
         description: "Ceph Object Storage Daemon latency is high. Please check if it doesn't stuck in weird state.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     # Ceph internally triggers OSD_NEARFULL based on the nearfull_ratio (default 85%).
-    # ceph_health_detail can also be used for more granular OSD space alerts.
+    # ceph_health_detail exposes named health checks as individual time series.
     - alert: CephOsdNearFull
       expr: 'ceph_health_detail{name="OSD_NEARFULL"} == 1'
       for: 5m
