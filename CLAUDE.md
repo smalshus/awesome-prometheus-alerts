@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-A curated collection of ~940 Prometheus alerting rules covering 90+ services across 100+ exporters, organized in 7 categories: basic resource monitoring (Prometheus, host/hardware, SMART, Docker, Blackbox, Windows, VMware, Netdata), databases and brokers (MySQL, PostgreSQL, Redis, MongoDB, RabbitMQ, Elasticsearch, Cassandra, Clickhouse, Kafka, etc.), reverse proxies and load balancers (Nginx, Apache, HaProxy, Traefik, Caddy), runtimes (PHP-FPM, JVM, Sidekiq), orchestrators (Kubernetes, Nomad, Consul, Etcd, Istio, ArgoCD, FluxCD), network/security/storage (Ceph, ZFS, Minio, SSL/TLS, CoreDNS, Vault, Cloudflare), and observability tools (Thanos, Loki, Cortex, OpenTelemetry Collector, Jenkins).
+A curated collection of ~940 Prometheus alerting rules covering 90+ services across 100+ exporters, organized in categories: basic resource monitoring (Prometheus, host/hardware, SMART, Docker, Blackbox, Windows, VMware, Netdata), databases (MySQL, PostgreSQL, Redis, MongoDB, Elasticsearch, Cassandra, Clickhouse, CouchDB, etc.), message brokers (RabbitMQ, Kafka, Pulsar, Nats, Zookeeper), proxies/load balancers/service meshes (Nginx, Apache, HaProxy, Traefik, Caddy, Linkerd, Istio), runtimes (PHP-FPM, JVM, Sidekiq), data engineering (Apache Flink, Apache Spark, Hadoop), orchestrators (Kubernetes, Nomad, Consul, Etcd, OpenStack), CI/CD (Jenkins, ArgoCD, FluxCD, GitLab CI, Spinnaker), network and security (SSL/TLS, CoreDNS, Vault, Cloudflare, Cilium, eBPF), storage (Ceph, ZFS, OpenEBS, Minio), cloud providers (AWS, Azure, DigitalOcean), observability (Thanos, Loki, Cortex, OpenTelemetry Collector, Grafana Tempo/Mimir/Alloy, Jaeger), and other (APC UPS, Graph Node).
 
 All rules are stored in a single YAML data file (`_data/rules.yml`) and rendered as a Jekyll-based GitHub Pages site at https://samber.github.io/awesome-prometheus-alerts. The site provides copy-pasteable Prometheus alert snippets and downloadable rule files per exporter.
 
@@ -105,6 +105,7 @@ These are the most frequent issues raised during code review on this repo:
 - When dividing counters (e.g., error rate = errors / total), guard against division by zero with `and total > 0` or filter appropriately. This is the most common issue in new PRs — check every ratio query.
 - Filter out system/template databases explicitly in DB queries (e.g., PostgreSQL: add `datid!="0"` alongside `datname!~"template.*|postgres"`).
 - Never use `rate()` on a gauge metric — use `deriv()` instead. `rate()` is for monotonically increasing counters only.
+- Conversely, never use `deriv()` or `delta()` on a metric that is a cumulative counter, even if the exporter declares it as `untyped`. The only reliable way to determine whether a metric is a counter or a gauge is to check whether it monotonically increases and resets on restart — not just the declared type. Known examples of untyped metrics with counter semantics: `node_vmstat_*` (e.g., `node_vmstat_pgmajfault`, `node_vmstat_oom_kill`) from node_exporter (cumulative values from /proc/vmstat — the official node_exporter mixin uses `rate()`); MySQL `SHOW GLOBAL STATUS` variables via mysqld_exporter (e.g., `mysql_global_status_slow_queries`, `mysql_global_status_innodb_log_waits`, `mysql_global_status_questions` — all monotonically increasing, use `rate()`/`increase()`).
 - When using `increase()` for ratio calculations, prefer `rate()` instead — `increase()` can produce incorrect results when counters reset mid-window.
 - When filtering gRPC error codes, don't use `grpc_code!="OK"` — this includes normal application responses like `NotFound`, `AlreadyExists`, and `Cancelled`. Filter to actual errors: `grpc_code=~"Internal|Unavailable|DeadlineExceeded|ResourceExhausted|Aborted|Unknown"`.
 - When computing ratios with `rate()` on a metric that is itself already a normalized rate (e.g., Oracle's `v$waitclassmetric`), applying `rate()` computes the rate-of-change of a rate, which is not meaningful.
@@ -120,11 +121,13 @@ These are the most frequent issues raised during code review on this repo:
 - Watch for thresholds that will fire on normal healthy operation. Examples: Memcached at 90% memory is desired (it's a cache), Flink TaskManager at 90% JVM heap is normal, cache hit rate < 80% is common for cold caches.
 - For SNMP bandwidth utilization, `ifSpeed` (Gauge32) maxes at ~4.29 Gbps. For 10G+ interfaces, use `ifHighSpeed * 1000000` instead.
 - For alerts using `> 0` on counters with `rate()` or `increase()`, consider whether a single event truly warrants alerting. In most cases, a small threshold (e.g., `> 0.05` for rate, `> 3` for increase) better distinguishes real problems from transient noise.
+- When checking a cumulative total metric (one that only resets on process restart) with `> 0`, the alert will fire permanently after the first occurrence and never resolve. Always wrap such metrics in `increase()` or `rate()` to detect new events. Known example: `opensearch_circuitbreaker_tripped_count > 0` fires forever after the first circuit breaker trip.
 
 ### Comments
 - When an alert or its query needs explanation (e.g., non-obvious PromQL logic, threshold rationale, edge cases), use the rule-level `comments:` field. Use multiline comments when needed.
 - Use the exporter-level `comments:` field for notes that apply to all rules under that exporter (e.g., exporter version requirements, known quirks, setup prerequisites).
 - Comments are rendered as YAML `#` comments in the output, so they are visible to users who copy-paste the rules.
+- Never add two `comments:` keys to the same rule or exporter block. YAML silently discards the first when there are duplicate keys in the same mapping. Always merge multiple comment paragraphs into a single `comments:` field using the multiline `|` block scalar.
 
 ### Descriptions
 - Keep descriptions short, factual, and actionable.
@@ -178,6 +181,7 @@ Everytime you consume an external resource to change a PromQL query, please comp
 - https://github.com/metalmatze/kube-cockroachdb (CockroachDB on Kubernetes)
 - https://github.com/bitnami-labs/sealed-secrets (sealed-secrets mixin)
 - https://github.com/lukas-vlcek/elasticsearch-mixin (includes runbook.md)
+- https://github.com/opensearch-project/opensearch-prometheus-exporter (OpenSearch exporter — check metric names here)
 - https://github.com/adinhodovic/postgresql-mixin
 - https://github.com/imusmanmalik/cert-manager-mixin
 - https://gitlab.com/uneeq-oss/cert-manager-mixin (alternative cert-manager mixin)
