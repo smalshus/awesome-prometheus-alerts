@@ -1,6 +1,6 @@
 # 👋 Awesome Prometheus Alerts [![Awesome](https://awesome.re/badge-flat.svg)](https://awesome.re)
 
-> Most alerting rules are common to every Prometheus setup. We need a place to find them all. 🤘 🚨 📊
+> **940+ production-ready Prometheus alerting rules for 90+ services** — copy-paste YAML for Kubernetes, MySQL, Redis, Kafka, and more.
 
 Collection available here: **[https://samber.github.io/awesome-prometheus-alerts](https://samber.github.io/awesome-prometheus-alerts)**
 
@@ -177,11 +177,6 @@ There are many ways to contribute: writing code, alerting rules, documentation, 
 
 [Instructions here](CONTRIBUTING.md)
 
-## 🏋️ Improvements
-
-- Create an alert rule builder for custom alerts (severity, thresholds, instances...)
-- Add resolution suggestions to rule descriptions, for faster incident resolution ([#85](https://github.com/samber/awesome-prometheus-alerts/issues/85)).
-
 ## 💫 Show your support
 
 Give a ⭐️ if this project helped you!
@@ -190,6 +185,7 @@ Give a ⭐️ if this project helped you!
 
 ## 📝 License
 
-[![CC4](https://mirrors.creativecommons.org/presskit/cc.srr.primary.svg)](https://creativecommons.org/licenses/by/4.0/legalcode)
+- Alert rules and content: [Creative Commons CC BY 4.0](https://creativecommons.org/licenses/by/4.0/)
+- Site source code: [MIT](site/LICENSE)
 
-Licensed under the Creative Commons 4.0 License, see LICENSE file for more detail.
+See [LICENSE](LICENSE) for details.
