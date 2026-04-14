@@ -2,6 +2,7 @@
 import '../styles/global.css';
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
+import StarToast from '../components/StarToast.astro';
 import SEO from '../components/SEO.astro';
 import { SITE_ORIGIN, AUTHOR_NAME } from '../data/site';
 
@@ -96,5 +97,6 @@ const canonical = canonicalUrl ?? `${SITE_ORIGIN}${base}${Astro.url.pathname.rep
   </main>
 
   <Footer base={base} />
+  <StarToast />
 </body>
 </html>

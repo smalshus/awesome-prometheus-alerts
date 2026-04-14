@@ -86,5 +86,7 @@ const btnId = `copy-btn-${targetId}`;
       copyLabel?.classList.remove('hidden');
       copiedLabel?.classList.add('hidden');
     }, 2000);
+
+    window.dispatchEvent(new CustomEvent('copy-success'));
   });
 </script>

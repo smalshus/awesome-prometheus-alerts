@@ -1,0 +1,66 @@
+---
+import { GITHUB_URL } from '../data/site';
+---
+
+<!-- Star nudge toast — shown every 5 copies -->
+<div
+  id="star-toast"
+  role="status"
+  aria-live="polite"
+  class="fixed bottom-6 right-6 z-50 hidden max-w-sm w-full"
+>
+  <div class="flex items-start gap-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl shadow-lg px-4 py-3">
+    <svg class="w-4 h-4 text-yellow-500 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+    </svg>
+    <div class="flex-1 min-w-0">
+      <p class="text-sm text-slate-700 dark:text-slate-200">
+        Rule copied! If this saved you time,
+        <a
+          href={GITHUB_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          class="font-medium text-brand dark:text-brand-dark hover:underline"
+        >star the project on GitHub</a>.
+      </p>
+    </div>
+    <button
+      id="star-toast-close"
+      aria-label="Dismiss"
+      class="flex-shrink-0 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
+    >
+      <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+      </svg>
+    </button>
+  </div>
+</div>
+
+<script>
+  const COPY_COUNT_KEY = 'gh_star_copy_count';
+  const SHOW_EVERY = 5;
+  const toast = document.getElementById('star-toast');
+  const closeBtn = document.getElementById('star-toast-close');
+  let autoHideTimer: ReturnType<typeof setTimeout> | null = null;
+
+  function showToast() {
+    if (!toast) return;
+
+    const count = (parseInt(sessionStorage.getItem(COPY_COUNT_KEY) ?? '0', 10) || 0) + 1;
+    sessionStorage.setItem(COPY_COUNT_KEY, String(count));
+
+    if (count % SHOW_EVERY !== 0) return;
+
+    if (autoHideTimer) clearTimeout(autoHideTimer);
+    toast.classList.remove('hidden');
+    autoHideTimer = setTimeout(hideToast, 20000);
+  }
+
+  function hideToast() {
+    toast?.classList.add('hidden');
+    if (autoHideTimer) { clearTimeout(autoHideTimer); autoHideTimer = null; }
+  }
+
+  closeBtn?.addEventListener('click', hideToast);
+  window.addEventListener('copy-success', showToast);
+</script>
