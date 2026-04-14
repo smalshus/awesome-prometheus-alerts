@@ -173,15 +173,16 @@ const starsLabel = stars >= 1000 ? `${(stars / 1000).toFixed(1)}k` : String(star
     }
 
     const cached = sessionStorage.getItem(CACHE_KEY);
+    let isFresh = false;
     if (cached) {
       const { value, ts } = JSON.parse(cached);
       if (Date.now() - ts < CACHE_TTL) {
         starsEl.textContent = formatStars(value);
-        return; // cache is fresh, skip API call
+        isFresh = true;
       }
     }
 
-    fetch('https://api.github.com/repos/samber/awesome-prometheus-alerts', {
+    if (!isFresh) fetch('https://api.github.com/repos/samber/awesome-prometheus-alerts', {
       headers: { Accept: 'application/vnd.github+json' },
     })
       .then((r) => r.ok ? r.json() : null)
