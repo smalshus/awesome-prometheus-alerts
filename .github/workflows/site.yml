@@ -4,11 +4,13 @@ on:
   pull_request:
     paths:
       - site/**
+      - _data/**
   push:
     branches:
       - master
     paths:
       - site/**
+      - _data/**
 
 jobs:
   site-build:
