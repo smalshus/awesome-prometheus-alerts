@@ -177,6 +177,7 @@ const starsLabel = stars >= 1000 ? `${(stars / 1000).toFixed(1)}k` : String(star
       const { value, ts } = JSON.parse(cached);
       if (Date.now() - ts < CACHE_TTL) {
         starsEl.textContent = formatStars(value);
+        return; // cache is fresh, skip API call
       }
     }
 
