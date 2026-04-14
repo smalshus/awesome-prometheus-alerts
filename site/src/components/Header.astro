@@ -25,7 +25,7 @@ try {
   }
 } catch {}
 
-const starsLabel = stars >= 1000 ? `${(stars / 1000).toFixed(1)}k` : String(stars);
+const starsLabel = stars > 0 ? (stars >= 1000 ? `${(stars / 1000).toFixed(1)}k` : String(stars)) : '—';
 ---
 
 <!-- Main header -->
