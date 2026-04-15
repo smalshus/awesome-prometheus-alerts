@@ -98,5 +98,12 @@ const canonical = canonicalUrl ?? `${SITE_ORIGIN}${base}${Astro.url.pathname.rep
 
   <Footer base={base} />
   <StarToast />
+  <script>
+    import { record } from '../scripts/pipe';
+    window.addEventListener('apa-copy', (e: Event) => {
+      const { name, ...data } = (e as CustomEvent<Record<string, unknown>>).detail;
+      record(name as string, data);
+    });
+  </script>
 </body>
 </html>

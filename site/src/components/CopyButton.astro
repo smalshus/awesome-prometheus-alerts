@@ -8,9 +8,10 @@ interface Props {
   class?: string;
   withAttribution?: boolean;
   nudge?: boolean;
+  copyData?: Record<string, unknown> | null;
 }
 
-const { targetId, label = 'Copy', variant = 'icon', class: extraClass = '', withAttribution = false, nudge = false } = Astro.props;
+const { targetId, label = 'Copy', variant = 'icon', class: extraClass = '', withAttribution = false, nudge = false, copyData = null } = Astro.props;
 const btnId = `copy-btn-${targetId}`;
 const nudgeId = `star-nudge-${btnId}`;
 ---
@@ -65,7 +66,7 @@ const nudgeId = `star-nudge-${btnId}`;
   </button>
 )}
 
-<script define:vars={{ btnId, nudgeId, withAttribution, nudge, GITHUB_URL }}>
+<script define:vars={{ btnId, nudgeId, withAttribution, nudge, GITHUB_URL, copyData }}>
   const btn = document.getElementById(btnId);
   if (!(btn instanceof HTMLButtonElement)) return;
   if (btn.dataset.copyBound === 'true') return;
@@ -126,6 +127,9 @@ const nudgeId = `star-nudge-${btnId}`;
       }
     }
 
+    if (copyData) {
+      window.dispatchEvent(new CustomEvent('apa-copy', { detail: copyData }));
+    }
     window.dispatchEvent(new CustomEvent('copy-success'));
   });
 </script>
