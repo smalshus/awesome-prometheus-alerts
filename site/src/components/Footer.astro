@@ -76,7 +76,7 @@ const featuredGroups = data.groups.filter((g) => featuredGroupSlugs.includes(get
         <h3 class="text-sm font-semibold text-slate-900 dark:text-white mb-3">Sponsors</h3>
         <div class="space-y-4">
           {sponsors.map((s) => (
-            <a href={s.url} target="_blank" rel="noopener noreferrer" class="block hover:opacity-80 transition-opacity">
+            <a href={s.url} target="_blank" rel="noopener noreferrer" class="block hover:opacity-80 transition-opacity" data-sponsor-name={s.name} data-sponsor-slot="footer">
               <img src={`${base}${s.logo}`} alt={`${s.name} — ${s.description}`} class="h-6" />
             </a>
           ))}
@@ -98,3 +98,8 @@ const featuredGroups = data.groups.filter((g) => featuredGroupSlugs.includes(get
     </div>
   </div>
 </footer>
+
+<script>
+  import { initSponsorClickTracking } from '../scripts/sponsor';
+  initSponsorClickTracking();
+</script>

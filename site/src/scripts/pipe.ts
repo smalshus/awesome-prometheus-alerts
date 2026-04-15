@@ -68,15 +68,13 @@ function getPageContext() {
 getUserId();
 getSessionId();
 
-export function record(name: string, data: Record<string, unknown>): void {
-  const payload = {
+function buildPayload(name: string, data: Record<string, unknown>): object {
+  return {
     timestamp: new Date().toISOString(),
     transaction_id: uid(),
-    name: "awesome_prometheus_alerts_"+name,
+    name: "awesome_prometheus_alerts_" + name,
     user_id: getUserId(),
     session_id: getSessionId(),
-    session_copy_count: bumpSessionCount(),
-    lifetime_copy_count: bumpLifetimeCount(),
     ...data,
     ...getPageContext(),
     language: navigator.language,
@@ -87,11 +85,40 @@ export function record(name: string, data: Record<string, unknown>): void {
     user_agent: navigator.userAgent,
     is_bot: /bot|crawl|spider/i.test(navigator.userAgent),
   };
+}
 
-    fetch(PIPE_URL+"awesome_prometheus_alerts_"+name, {
-        method: 'POST',
-        body: JSON.stringify(payload),
-        headers: { Authorization: `Bearer ${PIPE_KEY}` },
-        keepalive: true,
-    }).catch(console.error);
+export function record(name: string, data: Record<string, unknown>): void {
+  const payload = buildPayload(name, data);
+  fetch(PIPE_URL + "awesome_prometheus_alerts_" + name, {
+    method: 'POST',
+    body: JSON.stringify(payload),
+    headers: { Authorization: `Bearer ${PIPE_KEY}` },
+    keepalive: true,
+  }).catch(console.error);
+}
+
+export function recordCopy(name: string, data: Record<string, unknown>): void {
+  record(name, {
+    session_copy_count: bumpSessionCount(),
+    lifetime_copy_count: bumpLifetimeCount(),
+    ...data,
+  });
+}
+
+export async function recordAndWait(name: string, data: Record<string, unknown>): Promise<void> {
+  const payload = buildPayload(name, data);
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 1500);
+  try {
+    await fetch(PIPE_URL + "awesome_prometheus_alerts_" + name, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+      headers: { Authorization: `Bearer ${PIPE_KEY}` },
+      signal: ctrl.signal,
+    });
+  } catch {
+    // swallow — a failed event must never break sponsor navigation
+  } finally {
+    clearTimeout(timer);
+  }
 }
