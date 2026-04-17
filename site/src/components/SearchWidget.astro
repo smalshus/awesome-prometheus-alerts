@@ -41,5 +41,13 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '');
     } else {
       initPagefind();
     }
+
+    // Track search queries via PostHog
+    searchEl.addEventListener('pagefind:search', (e: Event) => {
+      const query = (e as CustomEvent<{ query: string }>).detail?.query;
+      if (query) {
+        window.posthog?.capture('search_performed', { query });
+      }
+    });
   }
 </script>

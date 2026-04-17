@@ -11,13 +11,14 @@
   },
   "dependencies": {
     "@astrojs/sitemap": "^3.0.0",
-    "@tailwindcss/vite": "^4.2.2",
     "@iconify-json/lucide": "^1.2.102",
     "@rollup/plugin-yaml": "^4.0.0",
+    "@tailwindcss/vite": "^4.2.2",
     "astro": "^5.0.0",
     "astro-icon": "^1.0.0",
     "js-yaml": "^4.1.0",
     "pagefind": "^1.0.0",
+    "posthog-js": "^1.369.2",
     "tailwindcss": "^4.2.2",
     "yaml": "^2.8.3"
   },

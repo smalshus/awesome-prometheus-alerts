@@ -4,6 +4,7 @@ import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
 import StarToast from '../components/StarToast.astro';
 import SEO from '../components/SEO.astro';
+import PostHog from '../components/posthog.astro';
 import { SITE_ORIGIN, AUTHOR_NAME } from '../data/site';
 
 interface Props {
@@ -84,6 +85,8 @@ const canonical = canonicalUrl ?? `${SITE_ORIGIN}${base}${Astro.url.pathname.rep
     gtag('js', new Date());
     gtag('config', 'G-GDF25KKVNL');
   </script>
+
+  <PostHog />
 </head>
 <body class="min-h-screen flex flex-col bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors duration-150">
   <a href="#main-content" class="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 bg-brand text-white px-3 py-1 rounded z-50">
@@ -99,10 +102,17 @@ const canonical = canonicalUrl ?? `${SITE_ORIGIN}${base}${Astro.url.pathname.rep
   <Footer base={base} />
   <StarToast />
   <script>
-    import { recordCopy } from '../scripts/pipe';
+    import { bumpSessionCount, bumpLifetimeCount } from '../scripts/pipe';
     window.addEventListener('apa-copy', (e: Event) => {
       const { name, ...data } = (e as CustomEvent<Record<string, unknown>>).detail;
-      recordCopy(name as string, data);
+      const counts = { session_copy_count: bumpSessionCount(), lifetime_copy_count: bumpLifetimeCount() };
+      if (name === 'rule_copy' && data.scope === 'rule') {
+        window.posthog?.capture('rule_copied', { ...data, ...counts });
+      } else if (name === 'rule_copy' && data.scope === 'exporter') {
+        window.posthog?.capture('all_rules_copied', { ...data, ...counts });
+      } else if (name === 'wget_copy') {
+        window.posthog?.capture('wget_copied', { ...data, ...counts });
+      }
     });
   </script>
 </body>
