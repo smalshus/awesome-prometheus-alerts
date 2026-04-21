@@ -64,10 +64,20 @@ function buildRedirects(base) {
 
 const base = '/awesome-prometheus-alerts';
 
+/** Legacy .html page redirects from the pre-Astro (Jekyll) site.
+ *  These pages 404 after the Astro migration since they moved to trailing-slash directories.
+ *  rules.html alone had 105 referring domains and was the #1 traffic page — critical to preserve. */
+const legacyHtmlRedirects = {
+  [`${base}/rules.html`]: { destination: `${base}/rules/`, status: 301 },
+  [`${base}/alertmanager.html`]: { destination: `${base}/alertmanager/`, status: 301 },
+  [`${base}/blackbox-exporter.html`]: { destination: `${base}/blackbox-exporter/`, status: 301 },
+  [`${base}/sleep-peacefully.html`]: { destination: `${base}/sleep-peacefully/`, status: 301 },
+};
+
 export default defineConfig({
   site: 'https://samber.github.io',
   base,
-  redirects: buildRedirects(base),
+  redirects: { ...buildRedirects(base), ...legacyHtmlRedirects },
   output: 'static',
   integrations: [
     sitemap({
