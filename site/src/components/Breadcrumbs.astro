@@ -15,6 +15,8 @@ const { items, base } = Astro.props;
 
 const allItems = [{ label: 'Home', href: `${base}/` }, ...items];
 
+const currentUrl = Astro.url.href;
+
 const jsonLd = {
   '@context': 'https://schema.org',
   '@type': 'BreadcrumbList',
@@ -22,7 +24,7 @@ const jsonLd = {
     '@type': 'ListItem',
     position: i + 1,
     name: item.label,
-    ...(item.href ? { item: `${SITE_ORIGIN}${item.href}` } : {}),
+    item: item.href ? `${SITE_ORIGIN}${item.href}` : currentUrl,
   })),
 };
 ---
