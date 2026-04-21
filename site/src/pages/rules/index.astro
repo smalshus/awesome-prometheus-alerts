@@ -14,7 +14,7 @@ const redirectMap = buildRedirectMap(base);
 const jsonLd = {
   '@context': 'https://schema.org',
   '@type': 'CollectionPage',
-  name: 'Prometheus Alerting Rules',
+  name: `${totalRules} Prometheus Alerting Rules for ${totalServices} Services`,
   description: `Browse ${totalRules} Prometheus alerting rules across ${totalServices} services. Organized by category: databases, Kubernetes, cloud providers, message brokers, and more.`,
   url: `${SITE_URL}rules/`,
   isPartOf: schemaWebSite,
@@ -32,7 +32,7 @@ const jsonLd = {
 ---
 
 <BaseLayout
-  title="Prometheus Alerting Rules | Awesome Prometheus Alerts"
+  title={`${totalRules} Prometheus Alerting Rules for ${totalServices} Services | Awesome Prometheus Alerts`}
   description={`Browse ${totalRules} Prometheus alerting rules across ${totalServices} services. Organized by category: databases, Kubernetes, cloud providers, message brokers, and more.`}
   jsonLd={jsonLd}
 >

@@ -22,12 +22,10 @@ const ruleCount = getRuleCount(service);
 const groupIndex = data.groups.findIndex((g) => getGroupSlug(g) === groupSlug) + 1;
 const serviceIndex = group.services.findIndex((s) => getServiceSlug(s) === serviceSlug) + 1;
 
-// Build exporters summary for meta description
+// Build exporters summary for keywords (kept for <meta keywords> but removed from description)
 const exporterNames = service.exporters.map((e) => e.name).filter(Boolean).join(', ');
-const metaDescBase = `${ruleCount} ready-to-use Prometheus alert rules for ${service.name}${exporterNames ? ` (${exporterNames})` : ''}. Copy-paste YAML for critical and warning alerts.`;
-const metaDesc = metaDescBase.length > 160
-  ? `${ruleCount} ready-to-use Prometheus alert rules for ${service.name}. Copy-paste YAML for critical and warning alerts.`
-  : metaDescBase;
+// Description: lead with count + service + format signals. Exporter names go in keywords, not here.
+const metaDesc = `${ruleCount} ready-to-use Prometheus alert rules for ${service.name}. Critical and warning YAML snippets — copy-paste into your Prometheus config or wget download.`;
 
 // FAQ JSON-LD for GEO (AI search engines)
 const faqItems = service.exporters.flatMap((exp) =>
@@ -55,7 +53,7 @@ const jsonLd = {
     {
       '@type': 'TechArticle',
       '@id': `${pageUrl}#article`,
-      headline: `${service.name} Prometheus Alert Rules`,
+      headline: `${service.name} Prometheus Alert Rules (${ruleCount})`,
       description: metaDesc,
       about: `Prometheus monitoring for ${service.name}`,
       url: pageUrl,
@@ -76,7 +74,7 @@ const jsonLd = {
 ---
 
 <BaseLayout
-  title={`${service.name} Alert Rules | Awesome Prometheus Alerts`}
+  title={`${service.name} Prometheus Alert Rules (${ruleCount}) | Awesome Prometheus Alerts`}
   description={metaDesc}
   ogType="article"
   keywords={keywords}

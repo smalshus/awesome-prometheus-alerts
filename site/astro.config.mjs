@@ -67,10 +67,15 @@ const base = '/awesome-prometheus-alerts';
 export default defineConfig({
   site: 'https://samber.github.io',
   base,
-  redirects: buildRedirects(base),
+  redirects: { ...buildRedirects(base) },
   output: 'static',
   integrations: [
     sitemap({
+      /** Exclude redirect source URLs from the sitemap.
+       *  Astro generates static HTML redirect files for every entry in `redirects`, and the
+       *  sitemap plugin naively picks them up. We must explicitly filter them out so that Google
+       *  only indexes canonical destinations, not the redirect intermediaries. */
+      filter: (page) => !page.includes('.html'),
       serialize(item) {
         const path = new URL(item.url).pathname;
         const segments = path.replace(/^\/|\/$/g, '').split('/').filter(Boolean);
@@ -78,22 +83,22 @@ export default defineConfig({
 
         if (segments.length <= 1) {
           // Homepage
-          return { ...item, changefreq: 'weekly', priority: 1.0, lastmod: new Date() };
+          return { ...item, changefreq: 'weekly', priority: 1.0 };
         }
         if (segments.length === 2 && segments[1] === 'rules') {
           // /rules/ index
-          return { ...item, changefreq: 'weekly', priority: 0.9, lastmod: new Date() };
+          return { ...item, changefreq: 'weekly', priority: 0.9 };
         }
         if (segments.length === 3 && segments[1] === 'rules') {
           // /rules/[group]/ index
-          return { ...item, changefreq: 'monthly', priority: 0.7, lastmod: new Date() };
+          return { ...item, changefreq: 'monthly', priority: 0.7 };
         }
         if (segments.length === 4 && segments[1] === 'rules') {
           // /rules/[group]/[service]/ — main content pages
-          return { ...item, changefreq: 'monthly', priority: 0.8, lastmod: new Date() };
+          return { ...item, changefreq: 'monthly', priority: 0.8 };
         }
         // Guide pages and others
-        return { ...item, changefreq: 'yearly', priority: 0.6, lastmod: new Date() };
+        return { ...item, changefreq: 'yearly', priority: 0.6 };
       },
     }),
     icon(),
