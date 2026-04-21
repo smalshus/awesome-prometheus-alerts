@@ -1,5 +1,9 @@
 User-agent: *
 Allow: /
+Disallow: /awesome-prometheus-alerts/rules.html
+Disallow: /awesome-prometheus-alerts/alertmanager.html
+Disallow: /awesome-prometheus-alerts/blackbox-exporter.html
+Disallow: /awesome-prometheus-alerts/sleep-peacefully.html
 
 # AI search bots — explicitly allowed for citation
 User-agent: GPTBot
